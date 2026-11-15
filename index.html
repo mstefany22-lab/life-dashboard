@@ -270,7 +270,7 @@ textarea.journal{min-height:120px}
     </div>
   </section>
 
-  <div class="footer-note">Life Dashboard V45: com sua conta conectada, os dados são sincronizados pela nuvem. Mantenha backups JSON periódicos.</div>
+  <div class="footer-note">Life Dashboard V46: com sua conta conectada, os dados são sincronizados pela nuvem. Mantenha backups JSON periódicos.</div>
 </main>
 </div>
 
@@ -374,18 +374,18 @@ host.innerHTML=pillars.map((p,i)=>`<button class="chip ${i===0?"active":""}" dat
 let pi=0;
 function draw(){
  let list=data.checklists.filter(c=>c.pillar===pi);
- document.getElementById("checklistList").innerHTML=list.length?list.map(c=>`<div class="row-item"><div><strong>${esc(c.name)}</strong><div class="sub">${c.items.length} itens · ${c.items.map(x=>esc(x.text)).join(" · ")}</div></div><button class="btn" onclick="editChecklist('${c.id}')">Editar</button></div>`).join(""):'<div class="board-note">Nenhum checklist cadastrado neste pilar. Crie um novo checklist para começar.</div>';
+ document.getElementById("checklistList").innerHTML=list.length?list.map(c=>`<div class="row-item"><div><strong>${esc(c.name)}</strong><div class="sub">${c.items.length} itens<div class="small muted" style="margin-top:6px;display:grid;gap:4px">${c.items.map(x=>`<div>• ${esc(x.text)}</div>`).join("")}</div></div></div><button class="btn" onclick="editChecklist('${c.id}')">Editar</button></div>`).join(""):'<div class="board-note">Nenhum checklist cadastrado neste pilar. Crie um novo checklist para começar.</div>';
 }
 host.querySelectorAll("[data-check-pillar]").forEach(b=>b.onclick=()=>{pi=+b.dataset.checkPillar;host.querySelectorAll("[data-check-pillar]").forEach(x=>x.classList.toggle("active",x===b));draw()});
 draw();
 }
 function checklistForm(existing){
 openModal(existing?"Editar checklist":"Novo checklist",`<form><div class="form-grid">${field("Nome","name")}${pillarSelect()}<div class="field full"><label>Itens (um por linha)</label><textarea name="items" required placeholder="Descreva um item por linha"></textarea></div></div><div style="text-align:right;margin-top:15px"><button class="btn primary">Salvar checklist</button></div></form>`,f=>{
- let c={id:existing?.id||crypto.randomUUID(),name:f.get("name"),pillar:+f.get("pillar"),items:f.get("items").split("\\n").filter(x=>x.trim()).map(text=>({text:text.trim(),notes:""}))};
+ let c={id:existing?.id||crypto.randomUUID(),name:f.get("name"),pillar:+f.get("pillar"),items:f.get("items").split("\n").filter(x=>x.trim()).map(text=>({text:text.trim(),notes:""}))};
  if(existing)data.checklists=data.checklists.map(x=>x.id===existing.id?c:x);else data.checklists.push(c);
  save();renderChecklist()
 });
-if(existing){let form=document.querySelector("#modalBody form");form.name.value=existing.name;form.pillar.value=existing.pillar;form.items.value=existing.items.map(x=>x.text).join("\\n")}
+if(existing){let form=document.querySelector("#modalBody form");form.name.value=existing.name;form.pillar.value=existing.pillar;form.items.value=existing.items.map(x=>x.text).join("\n")}
 }
 document.getElementById("addChecklist").onclick=()=>checklistForm();window.editChecklist=id=>{let c=data.checklists.find(x=>x.id===id);if(c)checklistForm(c)};
 let activePlanTab="projects";

@@ -270,7 +270,7 @@ textarea.journal{min-height:120px}
     </div>
   </section>
 
-  <div class="footer-note">Life Dashboard V41: com sua conta conectada, os dados são sincronizados pela nuvem. Mantenha backups JSON periódicos.</div>
+  <div class="footer-note">Life Dashboard V42: com sua conta conectada, os dados são sincronizados pela nuvem. Mantenha backups JSON periódicos.</div>
 </main>
 </div>
 
@@ -337,7 +337,7 @@ for(let mins=330;mins<=1320;mins+=30){
 host.style.gridTemplateColumns="76px minmax(0,1fr)";host.style.gridAutoRows="auto";host.innerHTML=html;
 let planned=arr.reduce((sum,a)=>sum+duration(a),0),actual=arr.reduce((sum,a)=>sum+(+a.actual||0),0),done=arr.filter(a=>a.status==="Concluída").length;
 document.getElementById("plannedHours").textContent=planned.toFixed(1).replace(".",",")+"h";document.getElementById("actualHours").textContent=actual.toFixed(1).replace(".",",")+"h";document.getElementById("execution").textContent=(arr.length?Math.round(done/arr.length*100):0)+"%";document.getElementById("doneCount").textContent=done;document.getElementById("doneCountDetail").textContent=`de ${arr.length} atividades planejadas`;
-const pillarRealized=pillars.map((p,i)=>arr.filter(a=>Number(a.pillar??0)===i&&a.status==="Concluída").reduce((sum,a)=>sum+(Number(a.actual)>0?Number(a.actual):duration(a)),0)),maxHours=Math.max(1,...pillarRealized);document.getElementById("dayPillars").innerHTML=pillars.map((p,i)=>`<div class="pillar-bar-item"><div class="pillar-bar-values"><span>${pillarRealized[i].toFixed(1).replace(".",",")}h</span></div><div class="pillar-bar-pair"><div class="pillar-bar-track"><div class="pillar-bar-fill actual" style="height:${pillarRealized[i]/maxHours*100}%;background:${colors[i]}"></div></div></div><div class="pillar-bar-label">${p}</div></div>`).join("");
+const pillarPlanned=pillars.map((p,i)=>arr.filter(a=>Number(a.pillar??0)===i).reduce((sum,a)=>sum+duration(a),0)),maxHours=Math.max(1,...pillarPlanned);document.getElementById("dayPillars").innerHTML=pillars.map((p,i)=>`<div class="pillar-bar-item"><div class="pillar-bar-values"><span>${pillarPlanned[i].toFixed(1).replace(".",",")}h</span></div><div class="pillar-bar-pair"><div class="pillar-bar-track"><div class="pillar-bar-fill actual" style="height:${pillarPlanned[i]/maxHours*100}%;background:${colors[i]}"></div></div></div><div class="pillar-bar-label">${p}</div></div>`).join("");
 const unscheduledSection=document.getElementById("dayUnscheduledSection"),unscheduledHost=document.getElementById("dayUnscheduledList");
 unscheduledSection.style.display=unscheduledActions.length?"block":"none";
 unscheduledHost.innerHTML=unscheduledActions.map(a=>`<div class="row-item" style="background:${colors[a.pillar]};border-radius:10px;padding:10px;margin:7px 0"><div style="min-width:0;flex:1"><strong>${esc(a.name)}</strong><div class="small muted">${esc(a.projectName||"Sem projeto")} · ${pillars[a.pillar]} · ${Number(a.plannedHours||0).toLocaleString("pt-BR")}h planejadas · ${esc(a.status)}</div></div><div class="toolbar"><button class="icon-btn" title="Editar ação" onclick="editAction('${a.projectId||"independent"}','${a.actionId}')">✎</button><button class="icon-btn" title="${a.status==="Concluída"?"Reabrir ação":"Concluir ação"}" onclick="toggleProjectActionStatus('${a.projectId||"independent"}','${a.actionId}')">${a.status==="Concluída"?"↶":"✓"}</button></div></div>`).join("");

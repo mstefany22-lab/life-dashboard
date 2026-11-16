@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Life Dashboard — V41</title>
+<title>Life Dashboard — V42</title>
 <style>
 :root{
  --bg:#eef1f5;--surface:#ffffff;--surface2:#e5e9ef;--ink:#303946;--muted:#7d8795;
@@ -172,6 +172,22 @@ textarea.journal{min-height:120px}
 
 .virtue-tile{border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px;text-align:left;color:var(--ink);display:grid;gap:5px;min-width:0}.virtue-tile.active{border-color:#91abc6;background:#edf3f9;box-shadow:0 0 0 2px #dce8f5}.virtue-tile span{font-weight:700}.virtue-tile strong{font:500 24px Georgia,serif;color:var(--sage-dark)}.virtue-tile small{font-size:10px;color:var(--muted)}.virtue-head{display:flex;justify-content:space-between;gap:14px;align-items:center}.virtue-score{min-width:76px;text-align:center;background:#edf3f9;border-radius:14px;padding:9px}.virtue-score strong{display:block;font:500 27px Georgia,serif;color:var(--sage-dark)}.virtue-score small{font-size:10px;color:var(--muted)}.virtue-group{padding:0;margin:10px 0;overflow:hidden}.virtue-group summary{cursor:pointer;list-style:none;padding:15px 17px;display:flex;justify-content:space-between;gap:12px;align-items:center}.virtue-group summary::-webkit-details-marker{display:none}.virtue-questions{padding:0 17px 12px}.virtue-question{padding:12px 0;border-top:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,210px);gap:12px;align-items:center}.virtue-question label{font-size:13px}.virtue-question select{padding:8px;font-size:12px}@media(max-width:650px){.virtue-head{align-items:flex-start}.virtue-question{grid-template-columns:1fr;gap:7px}.virtue-tile{padding:10px}.virtue-overview{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 
+
+/* V42 — abas e gerenciamento de recorrências dentro de Meu Dia */
+.day-tabs{display:flex;gap:8px;border-bottom:1px solid var(--line);margin:18px 0 20px;padding-bottom:9px}
+.day-tab{border:1px solid transparent;background:transparent;color:var(--muted);padding:10px 15px;border-radius:11px;font-weight:600}
+.day-tab:hover{background:#e9eef4;color:var(--ink)}.day-tab.active{background:#dce8f5;border-color:#cbd9e8;color:#365d86}
+.day-tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:21px;height:21px;margin-left:5px;padding:0 6px;border-radius:20px;background:#fff;color:#527da8;font-size:10px}
+.recurring-filters{display:grid;grid-template-columns:minmax(180px,1.5fr) repeat(3,minmax(140px,1fr));gap:9px;margin:14px 0 16px}
+.recurring-card{display:flex;align-items:center;gap:14px;padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:14px}
+.recurring-color{width:7px;align-self:stretch;min-height:48px;border-radius:8px;flex:0 0 7px}.recurring-main{min-width:0;flex:1}.recurring-main strong{display:block;font-size:13px}
+.recurring-meta{display:flex;gap:7px 12px;flex-wrap:wrap;margin-top:5px;color:var(--muted);font-size:11px}
+.recurring-status{font-size:10px;padding:4px 9px;border-radius:20px;background:#e6f0e8;color:#477456;white-space:nowrap}
+.recurring-status.ended{background:#f0f1f3;color:#7b8490}.recurring-status.scheduled{background:#e7eef7;color:#496b91}
+.recurring-actions{display:flex;gap:5px;flex:0 0 auto}.recurring-actions button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 9px;color:var(--ink)}
+.recurring-actions button:hover{background:#eef3f8}
+@media(max-width:700px){.recurring-filters{grid-template-columns:1fr 1fr}.recurring-filters input{grid-column:1/-1}.recurring-card{align-items:flex-start;gap:9px;padding:12px}.recurring-actions{flex-direction:column}.recurring-actions button{padding:6px 8px}.day-tab{flex:1;padding:10px 7px;font-size:12px}}
+
 </style>
 </head>
 <body>
@@ -205,6 +221,11 @@ textarea.journal{min-height:120px}
 
   <section class="page active" id="day">
     <p class="intro">Planeje seu tempo com intenção e acompanhe o que realmente aconteceu.</p>
+    <div class="day-tabs" role="tablist" aria-label="Meu Dia">
+      <button type="button" class="day-tab active" data-day-tab="agenda" role="tab" aria-selected="true">▦ Agenda do Dia</button>
+      <button type="button" class="day-tab" data-day-tab="recurring" role="tab" aria-selected="false">↻ Recorrências <span id="recurringTabCount" class="day-tab-count">0</span></button>
+    </div>
+    <div id="dayAgendaPanel">
     <div class="grid stats">
       <div class="stat"><span class="label">Horas planejadas</span><strong id="plannedHours">0h</strong><small>Agenda do dia</small></div>
       <div class="stat"><span class="label">Horas realizadas</span><strong id="actualHours">0h</strong><small>Registradas por você</small></div>
@@ -220,6 +241,17 @@ textarea.journal{min-height:120px}
     <div class="section-head"><h2>Agenda</h2><div class="toolbar"><input id="dayDate" type="date" style="width:auto"><button class="btn" id="weekToggle">Expandir semana</button><button class="btn primary" id="addActivity">＋ Atividade</button></div></div>
     <div id="dayAgenda" class="agenda"></div>
     <div id="weekView" class="grid two" style="display:none"></div>
+    </div>
+    <section id="dayRecurringPanel" style="display:none">
+      <div class="section-head"><div><h2>Atividades recorrentes</h2><p class="small muted" style="margin:4px 0 0">Consulte e gerencie todas as recorrências cadastradas.</p></div><span id="recurringCountLabel" class="small muted"></span></div>
+      <div class="recurring-filters">
+        <input id="recurringSearch" type="search" placeholder="Buscar atividade..." aria-label="Buscar atividade recorrente">
+        <select id="recurringPillarFilter" aria-label="Filtrar por pilar"><option value="">Todos os pilares</option></select>
+        <select id="recurringFrequencyFilter" aria-label="Filtrar por frequência"><option value="">Todas as frequências</option><option value="daily">Diária</option><option value="weekly">Semanal</option><option value="monthly">Mensal</option></select>
+        <select id="recurringStatusFilter" aria-label="Filtrar por situação"><option value="">Todas as situações</option><option value="active">Ativas</option><option value="scheduled">Programadas</option><option value="ended">Encerradas</option></select>
+      </div>
+      <div id="recurringList" class="list"></div>
+    </section>
   </section>
 
   <section class="page" id="checklists">
@@ -726,7 +758,55 @@ function renderStats(){document.querySelectorAll("[data-save]").forEach(el=>{if(
 document.querySelectorAll("[data-save]").forEach(el=>el.addEventListener("change",()=>{data.notes[el.dataset.save]=el.value;save()}));
 document.getElementById("backupBtn").onclick=()=>{let blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="Life-Dashboard-Backup-"+dateISO()+".json";a.click();URL.revokeObjectURL(url)};
 document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();document.getElementById("importFile").onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let imported=JSON.parse(r.result);if(confirm("Importar backup? Os dados atuais deste navegador serão substituídos.")){data={...blank(),...imported};save();renderAll();alert("Backup importado.")}}catch(err){alert("Arquivo JSON inválido.")}};r.readAsText(f)};
-function renderAll(){renderDay();renderChecklist();renderPlan();renderVision();renderWeekly();renderStats()}
+
+/* V42 — painel de recorrências */
+function recurringFrequencyLabel(t){return t.frequency==="daily"?"Diária":t.frequency==="monthly"?"Mensal":t.frequency==="weekly"?"Semanal":"Não definida"}
+function recurringDaysLabel(t){
+ if(t.frequency!=="weekly")return "";
+ const names=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+ const days=(t.days&&t.days.length?t.days:[new Date((t.startDate||today)+"T12:00:00").getDay()]).slice().sort((a,b)=>a-b);
+ return days.map(d=>names[d]).join(", ");
+}
+function recurringState(t){const now=dateISO();if(t.until&&t.until<now)return "ended";if(t.startDate>now)return "scheduled";return "active"}
+function renderRecurringPanel(){
+ const list=document.getElementById("recurringList");if(!list)return;
+ const all=Array.isArray(data.recurringTasks)?data.recurringTasks:[];
+ const count=document.getElementById("recurringTabCount");if(count)count.textContent=all.length;
+ const label=document.getElementById("recurringCountLabel");if(label)label.textContent=all.length+" cadastrada(s)";
+ const pf=document.getElementById("recurringPillarFilter");
+ if(pf&&pf.options.length===1)pf.innerHTML='<option value="">Todos os pilares</option>'+pillars.map((p,i)=>'<option value="'+i+'">'+esc(p)+'</option>').join("");
+ const q=(document.getElementById("recurringSearch")?.value||"").trim().toLocaleLowerCase("pt-BR");
+ const pv=pf?.value??"",fv=document.getElementById("recurringFrequencyFilter")?.value??"",sv=document.getElementById("recurringStatusFilter")?.value??"";
+ const items=all.filter(t=>{const state=recurringState(t);return (!q||(t.name||"").toLocaleLowerCase("pt-BR").includes(q))&&(pv===""||String(t.pillar??0)===pv)&&(!fv||t.frequency===fv)&&(!sv||state===sv)}).slice().sort((a,b)=>(a.start||"").localeCompare(b.start||"")||(a.name||"").localeCompare(b.name||""));
+ if(!items.length){list.innerHTML=all.length?'<div class="board-note">Nenhuma recorrência corresponde aos filtros selecionados.</div>':'<div class="board-note">Você ainda não cadastrou atividades recorrentes. Para criar uma, use “＋ Atividade” na aba Agenda do Dia e escolha uma frequência em Repetição.</div>';return}
+ list.innerHTML=items.map(t=>{
+  const state=recurringState(t),stateLabel=state==="ended"?"Encerrada":state==="scheduled"?"Programada":"Ativa";
+  const period=(t.startDate?new Date(t.startDate+"T12:00:00").toLocaleDateString("pt-BR"):"—")+(t.until?" até "+new Date(t.until+"T12:00:00").toLocaleDateString("pt-BR"):" · sem data final");
+  const details=[pillars[Number(t.pillar)||0]||"Sem pilar",recurringFrequencyLabel(t),recurringDaysLabel(t),t.start&&t.end?t.start+"–"+t.end:"Sem horário",period].filter(Boolean).join(" · ");
+  const id=String(t.id).replace(/'/g,"&#39;");
+  return '<article class="recurring-card"><span class="recurring-color" style="background:'+(colors[Number(t.pillar)||0]||"#8a98a8")+'"></span><div class="recurring-main"><strong>'+esc(t.name||"Atividade sem nome")+'</strong><div class="recurring-meta">'+esc(details)+'</div></div><span class="recurring-status '+state+'">'+stateLabel+'</span><div class="recurring-actions"><button type="button" title="Editar recorrência" onclick="window.editRecurringSeries(\''+id+'\')">✎</button><button type="button" title="Excluir recorrência" onclick="window.deleteRecurringSeries(\''+id+'\')">×</button></div></article>';
+ }).join("");
+}
+window.editRecurringSeries=id=>{const t=data.recurringTasks.find(x=>String(x.id)===String(id));if(t)window.editActivity("rec-"+t.id+"-"+t.startDate)};
+window.deleteRecurringSeries=id=>{
+ const t=data.recurringTasks.find(x=>String(x.id)===String(id));if(!t)return;
+ if(!confirm('Excluir a recorrência "'+(t.name||"Atividade")+'" e removê-la das próximas agendas?'))return;
+ data.recurringTasks=data.recurringTasks.filter(x=>String(x.id)!==String(id));save();renderAll();
+};
+function setupDayTabs(){
+ const tabs=[...document.querySelectorAll("[data-day-tab]")];
+ tabs.forEach(tab=>tab.addEventListener("click",()=>{
+  const selected=tab.dataset.dayTab;
+  tabs.forEach(x=>{const active=x===tab;x.classList.toggle("active",active);x.setAttribute("aria-selected",active?"true":"false")});
+  document.getElementById("dayAgendaPanel").style.display=selected==="agenda"?"block":"none";
+  document.getElementById("dayRecurringPanel").style.display=selected==="recurring"?"block":"none";
+  if(selected==="recurring")renderRecurringPanel();
+ }));
+ ["recurringSearch","recurringPillarFilter","recurringFrequencyFilter","recurringStatusFilter"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener(id==="recurringSearch"?"input":"change",renderRecurringPanel)});
+}
+
+function renderAll(){renderDay();renderChecklist();renderPlan();renderVision();renderWeekly();renderStats();renderRecurringPanel()}
+setupDayTabs();
 renderAll();
 initCloud();
 </script>

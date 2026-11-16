@@ -320,7 +320,7 @@ let data=load();
 function blank(){return {activities:[],recurringTasks:[],checklists:[],objectives:[],projects:[],standaloneActions:[],weeklyActionSelections:{},identity:{},references:[],weeklyScores:{},weeklyReviews:{},monthlyScores:{},notes:{}}}
 function load(){try{let d={...blank(),...JSON.parse(localStorage.getItem(stateKey)||"{}")} ; if(!d.projects.length && Array.isArray(d.objectives)){d.projects=d.objectives.flatMap(o=>(o.projects||[]).map(pr=>({...pr,pillar:o.pillar??0,legacyObjective:o.name||""})));} d.standaloneActions=Array.isArray(d.standaloneActions)?d.standaloneActions:[];return d}catch(e){return blank()}}
 function save(){localStorage.setItem(stateKey,JSON.stringify(data));renderStats();scheduleCloudSync()}
-let supabaseClient=null,cloudUser=null,cloudReady=false,cloudBusy=false,cloudTimer=null;
+let supabaseClient=null,cloudUser=null,cloudReady=false,cloudBusy=false,cloudTimer=null,cloudDirty=false,cloudRevision=0,cloudLastUpdatedAt=null,cloudPollTimer=null;
 function cloudMessage(message,connected=false){const status=document.getElementById("cloudStatus"),badge=document.getElementById("cloudBadge");if(status)status.textContent=message;if(badge){badge.textContent=connected?"Sincronização ativa":"Somente local";badge.style.background=connected?"#dcebe0":"#f1f3f5";badge.style.color=connected?"#356b49":"#687384"}}
 function mergeCloudData(local,remote){
  const merge=(a,b)=>{
@@ -334,10 +334,44 @@ function mergeCloudData(local,remote){
  };
  return merge(local||{},remote||{});
 }
-async function pushCloud(){if(!supabaseClient||!cloudUser||!cloudReady||cloudBusy)return;cloudBusy=true;try{const {error}=await supabaseClient.from("life_dashboard_data").upsert({user_id:cloudUser.id,data:data,updated_at:new Date().toISOString()},{onConflict:"user_id"});if(error)throw error;cloudMessage("Sincronizado · "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}),true)}catch(e){cloudMessage("Falha na sincronização: "+(e.message||"verifique sua conexão"),false)}finally{cloudBusy=false}}
-function scheduleCloudSync(){if(!cloudReady||!cloudUser)return;clearTimeout(cloudTimer);cloudTimer=setTimeout(pushCloud,900)}
-async function connectCloudUser(user){if(!user||cloudBusy)return;cloudBusy=true;cloudReady=false;cloudUser=user;cloudMessage("Conectando e mesclando seus dados...");try{const {data:row,error}=await supabaseClient.from("life_dashboard_data").select("data,updated_at").eq("user_id",user.id).maybeSingle();if(error)throw error;if(row&&row.data){data=mergeCloudData(data,row.data);localStorage.setItem(stateKey,JSON.stringify(data));}await supabaseClient.from("life_dashboard_data").upsert({user_id:user.id,data:data,updated_at:new Date().toISOString()},{onConflict:"user_id"}).throwOnError();cloudReady=true;document.getElementById("cloudAuthForm").style.display="none";document.getElementById("cloudConnected").style.display="flex";document.getElementById("cloudAccount").textContent="Conectado como "+user.email;cloudMessage("Sincronizado · seus dados locais e da nuvem foram mesclados.",true);renderAll()}catch(e){cloudUser=null;cloudReady=false;cloudMessage("Não foi possível conectar: "+(e.message||"verifique a tabela e as políticas RLS"));alert("Erro ao sincronizar: "+(e.message||e))}finally{cloudBusy=false}}
-async function initCloud(){if(!window.supabase){cloudMessage("Não foi possível carregar a biblioteca de conexão. Verifique sua internet.");return}supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);supabaseClient.auth.onAuthStateChange((event,session)=>{if(session?.user){if(!cloudUser||cloudUser.id!==session.user.id)connectCloudUser(session.user)}else if(event==="SIGNED_OUT"){cloudUser=null;cloudReady=false;document.getElementById("cloudAuthForm").style.display="grid";document.getElementById("cloudConnected").style.display="none";cloudMessage("Desconectado · seus dados continuam salvos neste navegador.")}});const {data:{session}}=await supabaseClient.auth.getSession();if(session?.user)await connectCloudUser(session.user)}
+async function pushCloud(){
+ if(!supabaseClient||!cloudUser||!cloudReady||cloudBusy)return;
+ cloudBusy=true;const revision=cloudRevision,stamp=new Date().toISOString(),snapshot=JSON.parse(JSON.stringify(data));
+ try{
+  const {error}=await supabaseClient.from("life_dashboard_data").upsert({user_id:cloudUser.id,data:snapshot,updated_at:stamp},{onConflict:"user_id"});
+  if(error)throw error;
+  cloudLastUpdatedAt=stamp;
+  if(revision===cloudRevision)cloudDirty=false;
+  cloudMessage("Sincronizado · "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}),true);
+ }catch(e){cloudMessage("Falha na sincronização: "+(e.message||"verifique sua conexão"),false)}
+ finally{cloudBusy=false;if(cloudDirty&&cloudReady){clearTimeout(cloudTimer);cloudTimer=setTimeout(pushCloud,500)}}
+}
+function scheduleCloudSync(){cloudDirty=true;cloudRevision++;if(!cloudReady||!cloudUser)return;clearTimeout(cloudTimer);cloudTimer=setTimeout(pushCloud,700)}
+async function pullCloud(){
+ if(!supabaseClient||!cloudUser||!cloudReady||cloudBusy||cloudDirty||document.visibilityState==="hidden")return;
+ cloudBusy=true;
+ try{
+  const {data:row,error}=await supabaseClient.from("life_dashboard_data").select("data,updated_at").eq("user_id",cloudUser.id).maybeSingle();
+  if(error)throw error;
+  if(row&&row.data&&row.updated_at&&(!cloudLastUpdatedAt||new Date(row.updated_at)>new Date(cloudLastUpdatedAt))){
+   if(cloudDirty)return;
+   data={...blank(),...row.data};
+   localStorage.setItem(stateKey,JSON.stringify(data));
+   cloudLastUpdatedAt=row.updated_at;
+   renderAll();
+   cloudMessage("Atualizado automaticamente · "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}),true);
+  }
+ }catch(e){cloudMessage("Não foi possível buscar atualizações: "+(e.message||"verifique sua conexão"),false)}
+ finally{cloudBusy=false}
+}
+function startCloudRefresh(){
+ if(cloudPollTimer)clearInterval(cloudPollTimer);
+ cloudPollTimer=setInterval(pullCloud,5000);
+ document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")pullCloud()});
+ window.addEventListener("focus",pullCloud);
+}
+async function connectCloudUser(user){if(!user||cloudBusy)return;cloudBusy=true;cloudReady=false;cloudUser=user;cloudMessage("Conectando e mesclando seus dados...");try{const {data:row,error}=await supabaseClient.from("life_dashboard_data").select("data,updated_at").eq("user_id",user.id).maybeSingle();if(error)throw error;if(row&&row.data){data=mergeCloudData(data,row.data);localStorage.setItem(stateKey,JSON.stringify(data));}const initialSyncStamp=new Date().toISOString();await supabaseClient.from("life_dashboard_data").upsert({user_id:user.id,data:data,updated_at:initialSyncStamp},{onConflict:"user_id"}).throwOnError();cloudLastUpdatedAt=initialSyncStamp;cloudDirty=false;cloudReady=true;document.getElementById("cloudAuthForm").style.display="none";document.getElementById("cloudConnected").style.display="flex";document.getElementById("cloudAccount").textContent="Conectado como "+user.email;cloudMessage("Sincronizado · seus dados locais e da nuvem foram mesclados.",true);renderAll()}catch(e){cloudUser=null;cloudReady=false;cloudMessage("Não foi possível conectar: "+(e.message||"verifique a tabela e as políticas RLS"));alert("Erro ao sincronizar: "+(e.message||e))}finally{cloudBusy=false}}
+async function initCloud(){if(!window.supabase){cloudMessage("Não foi possível carregar a biblioteca de conexão. Verifique sua internet.");return}supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);supabaseClient.auth.onAuthStateChange((event,session)=>{if(session?.user){if(!cloudUser||cloudUser.id!==session.user.id)connectCloudUser(session.user)}else if(event==="SIGNED_OUT"){cloudUser=null;cloudReady=false;document.getElementById("cloudAuthForm").style.display="grid";document.getElementById("cloudConnected").style.display="none";cloudMessage("Desconectado · seus dados continuam salvos neste navegador.")}});const {data:{session}}=await supabaseClient.auth.getSession();if(session?.user)await connectCloudUser(session.user);startCloudRefresh()}
 document.getElementById("cloudLogin").onclick=async()=>{const email=document.getElementById("cloudEmail").value.trim(),password=document.getElementById("cloudPassword").value;if(!email||!password){alert("Informe seu e-mail e sua senha.");return}const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)alert("Não foi possível entrar: "+error.message)};
 document.getElementById("cloudSignup").onclick=async()=>{const email=document.getElementById("cloudEmail").value.trim(),password=document.getElementById("cloudPassword").value;if(!email||password.length<6){alert("Informe um e-mail válido e uma senha com pelo menos 6 caracteres.");return}const {data:result,error}=await supabaseClient.auth.signUp({email,password});if(error)alert("Não foi possível criar a conta: "+error.message);else if(!result.session)alert("Conta criada! Verifique seu e-mail para confirmar o cadastro. Depois volte e entre no painel.");};
 document.getElementById("cloudSyncNow").onclick=pushCloud;document.getElementById("cloudLogout").onclick=async()=>{if(confirm("Desconectar a conta neste dispositivo? Os dados locais serão mantidos."))await supabaseClient.auth.signOut()};

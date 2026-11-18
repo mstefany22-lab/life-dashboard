@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Life Dashboard — V54</title>
+<title>Life Dashboard — V55</title>
 <style>
 :root{
  --bg:#eef1f5;--surface:#ffffff;--surface2:#e5e9ef;--ink:#303946;--muted:#7d8795;
@@ -623,12 +623,32 @@ host.querySelectorAll("[data-check-pillar]").forEach(b=>b.onclick=()=>{pi=+b.dat
 draw();
 }
 function checklistForm(existing){
-openModal(existing?"Editar checklist":"Novo checklist",`<form><div class="form-grid">${field("Nome","name")}${pillarSelect()}<div class="field full"><label>Itens (um por linha)</label><textarea name="items" required placeholder="Descreva um item por linha"></textarea></div></div><div style="text-align:right;margin-top:15px"><button class="btn primary">Salvar checklist</button></div></form>`,f=>{
- let c={id:existing?.id||crypto.randomUUID(),name:f.get("name"),pillar:+f.get("pillar"),items:f.get("items").split(/\r?\n/).filter(x=>x.trim()).map(text=>({text:text.trim(),notes:""}))};
- if(existing)data.checklists=data.checklists.map(x=>x.id===existing.id?c:x);else data.checklists.push(c);
- save();renderChecklist()
-});
-if(existing){let form=document.querySelector("#modalBody form");form.name.value=existing.name;form.pillar.value=existing.pillar;form.items.value=existing.items.map(x=>x.text).join("\n")}
+ const initialItems=(existing?.items||[]).map(item=>String(item.text??item));
+ const rows=initialItems.length?initialItems:[""];
+ openModal(existing?"Editar checklist":"Novo checklist",`<form id="checklistEditor"><div class="form-grid">${field("Nome","name")}${pillarSelect()}<div class="field full"><label>Atividades do checklist</label><div id="checklistEditorItems" style="display:grid;gap:8px"></div><button type="button" class="btn" id="addChecklistItem" style="margin-top:10px">＋ Adicionar atividade</button><p class="small muted" style="margin:8px 0 0">Cada atividade terá seu próprio checkbox quando o checklist for aberto em uma atividade.</p></div></div><div style="text-align:right;margin-top:15px"><button class="btn primary">Salvar checklist</button></div></form>`,f=>{
+  const items=[...document.querySelectorAll("#checklistEditorItems [data-checklist-text]")].map(input=>input.value.trim()).filter(Boolean).map(text=>({text,notes:""}));
+  if(!items.length){alert("Adicione pelo menos uma atividade ao checklist.");return}
+  const saved={id:existing?.id||crypto.randomUUID(),name:f.get("name"),pillar:+f.get("pillar"),items};
+  if(existing)data.checklists=data.checklists.map(x=>x.id===existing.id?saved:x);else data.checklists.push(saved);
+  save();renderChecklist()
+ });
+ const form=document.querySelector("#modalBody #checklistEditor");
+ form.elements.name.value=existing?.name||"";
+ form.elements.pillar.value=String(existing?.pillar??0);
+ const host=document.getElementById("checklistEditorItems");
+ function addChecklistEditorRow(value=""){
+  const row=document.createElement("div");
+  row.style.cssText="display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff";
+  const box=document.createElement("input");
+  box.type="checkbox";box.disabled=true;box.setAttribute("aria-label","Item do checklist");box.style.cssText="width:17px;height:17px;accent-color:var(--sage);flex:0 0 auto";
+  const input=document.createElement("input");
+  input.type="text";input.value=value;input.placeholder="Descreva a atividade";input.setAttribute("data-checklist-text","");input.style.cssText="flex:1;min-width:0;border:0;box-shadow:none;padding:5px 2px;background:transparent";
+  const remove=document.createElement("button");
+  remove.type="button";remove.textContent="×";remove.title="Remover atividade";remove.className="icon-btn";remove.onclick=()=>row.remove();
+  row.append(box,input,remove);host.append(row);
+ }
+ rows.forEach(value=>addChecklistEditorRow(value));
+ document.getElementById("addChecklistItem").onclick=()=>{addChecklistEditorRow();host.lastElementChild.querySelector("input[type=text]").focus()};
 }
 document.getElementById("addChecklist").onclick=()=>checklistForm();window.editChecklist=id=>{let c=data.checklists.find(x=>x.id===id);if(c)checklistForm(c)};
 let activePlanTab="projects";

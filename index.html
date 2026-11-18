@@ -628,7 +628,7 @@ openModal(existing?"Editar checklist":"Novo checklist",`<form><div class="form-g
  if(existing)data.checklists=data.checklists.map(x=>x.id===existing.id?c:x);else data.checklists.push(c);
  save();renderChecklist()
 });
-if(existing){let form=document.querySelector("#modalBody form");form.name.value=existing.name;form.pillar.value=existing.pillar;form.items.value=existing.items.map(x=>x.text).join("\\n")}
+if(existing){let form=document.querySelector("#modalBody form");form.name.value=existing.name;form.pillar.value=existing.pillar;form.items.value=existing.items.map(x=>x.text).join("\n")}
 }
 document.getElementById("addChecklist").onclick=()=>checklistForm();window.editChecklist=id=>{let c=data.checklists.find(x=>x.id===id);if(c)checklistForm(c)};
 let activePlanTab="projects";

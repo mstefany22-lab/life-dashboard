@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Life Dashboard — V53</title>
+<title>Life Dashboard — V54</title>
 <style>
 :root{
  --bg:#eef1f5;--surface:#ffffff;--surface2:#e5e9ef;--ink:#303946;--muted:#7d8795;
@@ -545,7 +545,13 @@ window.openActivityChecklist=id=>{
   checklist.runDate=a.date;
   save();
  }
- const items=checklist.items||[];
+ checklist.items=(checklist.items||[]).flatMap(item=>String(item.text??item).split(/\r?\n/).filter(text=>text.trim()).map(text=>({text:text.trim(),notes:""})));
+ if(!Array.isArray(checklist.run)||checklist.run.length!==checklist.items.length||checklist.runDate!==a.date){
+  checklist.run=checklist.items.map(()=>false);
+  checklist.runDate=a.date;
+  save();
+ }
+ const items=checklist.items;
  openModal(checklist.name,`<p class="muted small">${pillars[a.pillar]||""} · Execução em ${String(a.date||"").split("-").reverse().join("/")}</p>${items.map((it,i)=>`<label class="checkline ${checklist.run[i]?"done":""}"><input type="checkbox" data-check="${i}" ${checklist.run[i]?"checked":""}><span>${esc(it.text||it)}</span></label>`).join("")}<p class="muted small">${checklist.run.filter(Boolean).length} de ${items.length} concluídos nesta execução.</p>`,()=>{});
  document.querySelectorAll("#modalBody [data-check]").forEach(el=>el.onchange=()=>{
   checklist.run[+el.dataset.check]=el.checked;
@@ -618,7 +624,7 @@ draw();
 }
 function checklistForm(existing){
 openModal(existing?"Editar checklist":"Novo checklist",`<form><div class="form-grid">${field("Nome","name")}${pillarSelect()}<div class="field full"><label>Itens (um por linha)</label><textarea name="items" required placeholder="Descreva um item por linha"></textarea></div></div><div style="text-align:right;margin-top:15px"><button class="btn primary">Salvar checklist</button></div></form>`,f=>{
- let c={id:existing?.id||crypto.randomUUID(),name:f.get("name"),pillar:+f.get("pillar"),items:f.get("items").split("\\n").filter(x=>x.trim()).map(text=>({text:text.trim(),notes:""}))};
+ let c={id:existing?.id||crypto.randomUUID(),name:f.get("name"),pillar:+f.get("pillar"),items:f.get("items").split(/\r?\n/).filter(x=>x.trim()).map(text=>({text:text.trim(),notes:""}))};
  if(existing)data.checklists=data.checklists.map(x=>x.id===existing.id?c:x);else data.checklists.push(c);
  save();renderChecklist()
 });

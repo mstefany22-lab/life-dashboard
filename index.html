@@ -296,6 +296,10 @@ textarea.journal{min-height:120px}
       <div class="section-head"><h2>Atividades sem horário</h2><span class="small muted">Planejadas para este dia</span></div>
       <div id="dayUnscheduledList"></div>
     </section>
+    <section class="card" id="dayExerciseCard" style="padding:16px;margin:14px 0">
+      <div class="section-head" style="margin:0 0 10px"><div><h2>Exercícios do dia</h2><span class="small muted">Sua rotina recorrente de saúde</span></div><span class="small muted" id="dayExerciseCount">0/0 concluídos</span></div>
+      <div id="dayExerciseList"></div>
+    </section>
     <section class="card" id="dayBrainDumpCard" style="padding:16px;margin:18px 0">
       <div class="section-head" style="margin:0 0 10px"><div><h2>Brain Dump</h2><span class="small muted">Capture ideias, lembretes e tarefas ao longo do dia</span></div><span class="small muted" id="dayBrainDumpCount">0 itens</span></div>
       <div style="display:flex;gap:8px;align-items:flex-start;margin:10px 0">
@@ -519,9 +523,27 @@ window.deleteDayBrainDumpItem=index=>{
  items.splice(index,1);save();renderDayBrainDump();
 };
 
+function renderDayExercises(date){
+ const list=document.getElementById("dayExerciseList"),count=document.getElementById("dayExerciseCount");
+ if(!list)return;
+ data.exerciseActivities=Array.isArray(data.exerciseActivities)?data.exerciseActivities:[];
+ const weekday=new Date(date+"T12:00:00").getDay();
+ const items=data.exerciseActivities.filter(a=>(a.days||[]).includes(weekday));
+ const done=items.filter(a=>(a.completedDates||[]).includes(date)).length;
+ if(count)count.textContent=done+"/"+items.length+" concluídos";
+ list.innerHTML=items.length?items.map(a=>{
+  const checked=(a.completedDates||[]).includes(date);
+  return `<div style="display:flex;align-items:center;gap:11px;padding:11px 4px;border-bottom:1px solid var(--line);opacity:${checked?".65":"1"}">
+   <input type="checkbox" ${checked?"checked":""} aria-label="Concluir ${esc(a.name)}" onchange="toggleExercise('${a.id}','${date}',this.checked)" style="width:18px;height:18px;accent-color:var(--sage);flex:0 0 auto">
+   <div style="flex:1;min-width:0"><div style="font-weight:650;${checked?"text-decoration:line-through;":""}">${esc(a.name)}</div><div class="small muted">${esc(a.category||"Exercício")} · ${Number(a.minutes)||0} min · Recorrente</div></div>
+   <span class="small muted">${checked?"Concluído":"Pendente"}</span>
+  </div>`;
+ }).join(""):'<div class="small muted" style="padding:10px 2px">Nenhum exercício programado para esta data. Cadastre ou ajuste os dias na aba Exercícios.</div>';
+}
 function renderDay(){
 let d=document.getElementById("dayDate").value||today, dateObj=new Date(d+"T12:00:00");
 renderDayBrainDump(d);
+renderDayExercises(d);
 let recurring=data.recurringTasks.filter(t=>{if(d<t.startDate||(t.until&&d>t.until)||(t.excludedDates||[]).includes(d))return false;let st=new Date(t.startDate+"T12:00:00");return t.frequency==="daily"||(t.frequency==="weekly"&&(t.days?.length?t.days.includes(dateObj.getDay()):dateObj.getDay()===st.getDay()))||(t.frequency==="monthly"&&dateObj.getDate()===st.getDate())}).map(t=>({...t,id:"rec-"+t.id+"-"+d,date:d,recurringId:t.id,status:(t.completedDates||[]).includes(d)?"Concluída":"Pendente"}));
 const plannedDayActions=allProjectActions().filter(a=>(a.plannedDate||a.start)===d&&a.status!=="Cancelada").map(a=>({...a,id:"planned-action-"+a.id,date:d,start:a.startTime||"",end:a.endTime||"",pillar:Number(a.pillar)||0,status:a.status==="Concluída"?"Concluída":"Pendente",projectAction:true,projectId:a.projectId,actionId:a.id,actual:Number(a.actual)||0}));
 let projectDayActions=plannedDayActions.filter(a=>a.start&&a.end);
@@ -1113,7 +1135,7 @@ function renderExercises(){
   }).join(""):'<div class="exercise-empty">Nenhum exercício</div>')+'</div></section>';
  }).join("");
 }
-window.toggleExercise=(id,date,checked)=>{const a=data.exerciseActivities.find(x=>x.id===id);if(!a)return;a.completedDates=Array.isArray(a.completedDates)?a.completedDates:[];a.completedDates=a.completedDates.filter(d=>d!==date);if(checked)a.completedDates.push(date);save();renderExercises()};
+window.toggleExercise=(id,date,checked)=>{const a=data.exerciseActivities.find(x=>x.id===id);if(!a)return;a.completedDates=Array.isArray(a.completedDates)?a.completedDates:[];a.completedDates=a.completedDates.filter(d=>d!==date);if(checked)a.completedDates.push(date);save();renderExercises();renderDayExercises(document.getElementById("dayDate")?.value||today)};
 window.editExercise=id=>{const a=data.exerciseActivities.find(x=>x.id===id);if(a)exerciseForm(a)};
 window.deleteExercise=id=>{const a=data.exerciseActivities.find(x=>x.id===id);if(!a)return;if(!confirm('Excluir "'+a.name+'" da sua rotina recorrente? O histórico de conclusões também será removido.'))return;data.exerciseActivities=data.exerciseActivities.filter(x=>x.id!==id);save();renderExercises()};
 document.getElementById("addExerciseBtn").onclick=()=>exerciseForm();

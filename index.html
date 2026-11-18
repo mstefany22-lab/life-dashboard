@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Life Dashboard — V51</title>
+<title>Life Dashboard — V52</title>
 <style>
 :root{
  --bg:#eef1f5;--surface:#ffffff;--surface2:#e5e9ef;--ink:#303946;--muted:#7d8795;
@@ -211,6 +211,19 @@ textarea.journal{min-height:120px}
 .day-kanban-add{width:100%;margin-top:10px;padding:8px;border:1px dashed #b8c2cc;border-radius:9px;background:rgba(255,255,255,.55);color:var(--muted);font-size:12px}
 @media(max-width:760px){.day-kanban{grid-template-columns:1fr}.day-kanban-column{padding:11px}.day-kanban-list{min-height:45px}}
 
+
+/* Minha semana: calendário semanal */
+.myweek-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;align-items:stretch}
+.myweek-day{min-width:0;background:#fff;border:1px solid var(--line);border-radius:15px;overflow:hidden;box-shadow:var(--shadow)}
+.myweek-day>header{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:12px 10px;background:#f3f6fa;border-bottom:1px solid var(--line);font-size:11px;color:#40536a}
+.myweek-day.today>header{background:#dce8f5;color:#234d79}
+.myweek-day>header span{font-variant-numeric:tabular-nums;color:var(--muted)}
+.myweek-events{padding:7px;display:grid;gap:7px;align-content:start;min-height:100px}
+.myweek-event{display:flex;flex-direction:column;gap:3px;padding:8px;border:1px solid var(--line);border-left:4px solid;border-radius:9px;min-width:0;overflow-wrap:anywhere}
+.myweek-event strong{font-size:11px;line-height:1.3}.myweek-event small,.myweek-time{font-size:10px;color:var(--muted)}
+.myweek-empty{font-size:10px;color:var(--muted);padding:8px 3px}
+@media(max-width:1050px){.myweek-calendar{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:650px){.myweek-calendar{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.myweek-day>header{padding:10px 8px}.myweek-events{padding:6px}}
 </style>
 </head>
 <body>
@@ -219,6 +232,7 @@ textarea.journal{min-height:120px}
   <div class="brand"><h1>LIFE DASHBOARD</h1><small>PERSONAL MANAGEMENT SYSTEM</small></div>
   <nav class="nav" id="nav">
     <button class="active" data-page="day"><span class="ico">◷</span><span>Meu dia</span></button>
+    <button data-page="myWeek"><span class="ico">▦</span><span>Minha semana</span></button>
     <button data-page="checklists"><span class="ico">☑</span><span>Checklists</span></button>
     <button data-page="plan"><span class="ico">◎</span><span>Plano de Ação</span></button>
     <button data-page="vision"><span class="ico">◇</span><span>Virtudes</span></button>
@@ -267,9 +281,8 @@ textarea.journal{min-height:120px}
       </div>
       <div id="dayBrainDumpList"></div>
     </section>
-    <div class="section-head"><h2>Agenda</h2><div class="toolbar"><input id="dayDate" type="date" style="width:auto"><button class="btn" id="weekToggle">Expandir semana</button><button class="btn primary" id="addActivity">＋ Atividade</button></div></div>
+    <div class="section-head"><h2>Agenda</h2><div class="toolbar"><input id="dayDate" type="date" style="width:auto"><button class="btn primary" id="addActivity">＋ Atividade</button></div></div>
     <div id="dayAgenda" class="agenda"></div>
-    <div id="weekView" class="grid two" style="display:none"></div>
     </div>
     <section id="dayRecurringPanel" style="display:none">
       <div class="section-head"><div><h2>Atividades recorrentes</h2><p class="small muted" style="margin:4px 0 0">Consulte e gerencie todas as recorrências cadastradas.</p></div><span id="recurringCountLabel" class="small muted"></span></div>
@@ -283,7 +296,13 @@ textarea.journal{min-height:120px}
     </section>
   </section>
 
-  <section class="page" id="checklists">
+  <section class="page" id="myWeek">
+ <p class="intro">Visualize suas atividades, recorrências e ações de projetos distribuídas ao longo da semana.</p>
+ <div class="section-head"><h2 id="myWeekRange">Minha semana</h2><input type="week" id="myWeekPicker" style="width:auto"></div>
+ <div id="myWeekCalendar" class="myweek-calendar"></div>
+</section>
+
+<section class="page" id="checklists">
     <p class="intro">Crie listas reutilizáveis e abra-as diretamente pelas atividades da sua agenda.</p>
     <div class="section-head"><h2>Checklists por pilar</h2><button class="btn primary" id="addChecklist">＋ Novo checklist</button></div>
     <div id="checklistPillars" class="pillar-tabs"></div>
@@ -331,7 +350,7 @@ textarea.journal{min-height:120px}
     </div>
   </section>
 
-  <div class="footer-note">Life Dashboard V51: com sua conta conectada, os dados são sincronizados pela nuvem. Mantenha backups JSON periódicos.</div>
+  <div class="footer-note">Life Dashboard V52: com sua conta conectada, os dados são sincronizados pela nuvem. Mantenha backups JSON periódicos.</div>
 </main>
 </div>
 
@@ -551,46 +570,41 @@ window.deleteActivity=id=>{
  save();renderAll();
 };
 document.getElementById("addActivity").onclick=addActivity;
-document.getElementById("dayDate").onchange=()=>{renderDay();if(week)renderWeek()};
-let week=false;
-document.getElementById("weekToggle").onclick=()=>{
- week=!week;
- document.getElementById("dayAgenda").style.display=week?"none":"grid";
- document.getElementById("dayPillars").style.display=week?"none":"grid";
- document.getElementById("weekView").style.display=week?"block":"none";
- document.getElementById("weekToggle").textContent=week?"Voltar ao dia":"Expandir semana";
- if(week)renderWeek();
-};
-function renderWeek(){
- const selected=document.getElementById("dayDate").value||dateISO();
- const base=new Date(selected+"T12:00:00");
- const monday=new Date(base);
- monday.setDate(base.getDate()+(base.getDay()===0?-6:1-base.getDay()));
- const names=["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"];
- const html=Array.from({length:7},(_,i)=>{
-  const date=new Date(monday);
-  date.setDate(monday.getDate()+i);
+document.getElementById("dayDate").onchange=renderDay;
+let myWeekValue="";
+function myWeekDates(){
+ const value=document.getElementById("myWeekPicker").value||myWeekValue||isoWeekValue(new Date());
+ const parts=value.split("-W").map(Number),year=parts[0],weekNo=parts[1];
+ const jan4=new Date(year,0,4),monday=new Date(jan4);
+ monday.setDate(jan4.getDate()-((jan4.getDay()+6)%7)+(weekNo-1)*7);
+ return Array.from({length:7},(_,i)=>{const d=new Date(monday);d.setDate(monday.getDate()+i);return d});
+}
+function renderMyWeek(){
+ const picker=document.getElementById("myWeekPicker");if(!picker)return;
+ if(!picker.value)picker.value=myWeekValue||isoWeekValue(new Date());
+ myWeekValue=picker.value;
+ const dates=myWeekDates(),names=["Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado","Domingo"];
+ const days=dates.map((date,i)=>{
   const ds=dateISO(date);
   const recurring=(data.recurringTasks||[]).filter(t=>{
    if(ds<(t.startDate||ds)||(t.until&&ds>t.until)||(t.excludedDates||[]).includes(ds))return false;
    const origin=new Date((t.startDate||ds)+"T12:00:00");
-   return t.frequency==="daily"||
-    (t.frequency==="weekly"&&(t.days&&t.days.length?t.days.includes(date.getDay()):date.getDay()===origin.getDay()))||
-    (t.frequency==="monthly"&&date.getDate()===origin.getDate());
-  }).map(t=>({...t,start:t.start||"Sem horário",weeklyRecurring:true}));
+   return t.frequency==="daily"||(t.frequency==="weekly"&&(t.days&&t.days.length?t.days.includes(date.getDay()):date.getDay()===origin.getDay()))||(t.frequency==="monthly"&&date.getDate()===origin.getDate());
+  }).map(t=>({...t,start:t.start||"",weeklyRecurring:true,status:(t.completedDates||[]).includes(ds)?"Concluída":"Pendente"}));
   const activities=(data.activities||[]).filter(a=>a.date===ds);
-  const actions=allProjectActions().filter(a=>(a.plannedDate||a.start)===ds&&a.status!=="Cancelada").map(a=>({...a,start:a.startTime||"Sem horário",weeklyProject:true}));
+  const actions=allProjectActions().filter(a=>(a.plannedDate||a.start)===ds&&a.status!=="Cancelada").map(a=>({...a,start:a.startTime||"",end:a.endTime||"",weeklyProject:true}));
   const items=[...activities,...recurring,...actions].sort((a,b)=>(a.start||"").localeCompare(b.start||""));
-  const rows=items.length?items.map(a=>{
-   const time=a.start&&a.start!=="Sem horário"?esc(a.start)+(a.end?"–"+esc(a.end):""):"Sem horário";
-   const kind=a.weeklyRecurring?"Recorrente":a.weeklyProject?"Ação de projeto":"Atividade";
-   const color=colors[Number(a.pillar)||0]||"#e8edf3";
-   return "<div style=\"display:flex;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-top:7px;background:#fff\"><span style=\"width:5px;align-self:stretch;border-radius:5px;background:"+color+"\"></span><span class=\"small muted\" style=\"min-width:78px\">"+time+"</span><span style=\"flex:1;min-width:0\"><strong style=\"font-size:12px\">"+esc(a.name||"Atividade sem nome")+"</strong><span class=\"small muted\" style=\"display:block\">"+kind+(a.projectName?" · "+esc(a.projectName):"")+"</span></span></div>";
-  }).join(""):"<p class=\"small muted\" style=\"margin:10px 0 2px\">Nenhuma atividade cadastrada para este dia.</p>";
-  return "<section class=\"card\" style=\"padding:14px 16px;margin-bottom:10px\"><div style=\"display:flex;justify-content:space-between;align-items:center;gap:10px\"><strong>"+names[date.getDay()]+" · "+date.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})+"</strong><span class=\"small muted\">"+items.length+" atividade(s)</span></div>"+rows+"</section>";
+  const cards=items.length?items.map(a=>{
+   const color=colors[Number(a.pillar)||0]||"#e8edf3",time=a.start?esc(a.start)+(a.end?"–"+esc(a.end):""):"Sem horário";
+   const type=a.weeklyRecurring?"Recorrente":a.weeklyProject?"Projeto":"Atividade";
+   return "<article class=\"myweek-event\" style=\"border-left-color:"+color+";background:"+color+"22\"><span class=\"myweek-time\">"+time+"</span><strong>"+esc(a.name||"Atividade sem nome")+"</strong><small>"+type+(a.projectName?" · "+esc(a.projectName):"")+"</small></article>";
+  }).join(""):"<div class=\"myweek-empty\">Sem atividades</div>";
+  return "<section class=\"myweek-day"+(dateISO(new Date())===ds?" today":"")+"\"><header><strong>"+names[i]+"</strong><span>"+date.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})+"</span></header><div class=\"myweek-events\">"+cards+"</div></section>";
  }).join("");
- document.getElementById("weekView").innerHTML=html;
+ document.getElementById("myWeekCalendar").innerHTML=days;
+ document.getElementById("myWeekRange").textContent=dates[0].toLocaleDateString("pt-BR",{day:"2-digit",month:"long"})+" – "+dates[6].toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"});
 }
+document.getElementById("myWeekPicker").addEventListener("change",()=>{myWeekValue=document.getElementById("myWeekPicker").value;renderMyWeek()});
 function renderChecklist(){
 let host=document.getElementById("checklistPillars");
 host.innerHTML=pillars.map((p,i)=>`<button class="chip ${i===0?"active":""}" data-check-pillar="${i}">${p}</button>`).join("");
@@ -984,7 +998,7 @@ function setupDayTabs(){
  ["recurringSearch","recurringPillarFilter","recurringFrequencyFilter","recurringStatusFilter"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener(id==="recurringSearch"?"input":"change",renderRecurringPanel)});
 }
 
-function renderAll(){renderDay();renderChecklist();renderPlan();renderVision();renderWeekly();renderStats();renderRecurringPanel()}
+function renderAll(){renderDay();renderMyWeek();renderChecklist();renderPlan();renderVision();renderWeekly();renderStats();renderRecurringPanel()}
 setupDayTabs();
 renderAll();
 initCloud();

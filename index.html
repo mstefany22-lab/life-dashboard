@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Life Dashboard — V55</title>
+<title>Life Dashboard — V56</title>
 <style>
 :root{
  --bg:#eef1f5;--surface:#ffffff;--surface2:#e5e9ef;--ink:#303946;--muted:#7d8795;
@@ -224,6 +224,28 @@ textarea.journal{min-height:120px}
 .myweek-empty{font-size:10px;color:var(--muted);padding:8px 3px}
 @media(max-width:1050px){.myweek-calendar{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:650px){.myweek-calendar{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.myweek-day>header{padding:10px 8px}.myweek-events{padding:6px}}
+
+/* V56 — Kanban de exercícios recorrentes */
+.exercise-board{display:grid;grid-template-columns:repeat(7,minmax(155px,1fr));gap:10px;align-items:start;overflow-x:auto;padding-bottom:8px}
+.exercise-day{background:#f5f7fa;border:1px solid var(--line);border-radius:15px;min-height:220px;overflow:hidden}
+.exercise-day-head{padding:12px 11px;background:#eaf0f6;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:6px}
+.exercise-day-head strong{font-size:12px;color:#40536a}.exercise-day-head small{font-size:10px;color:var(--muted)}
+.exercise-day-list{padding:8px;display:grid;gap:8px}
+.exercise-card{background:#fff;border:1px solid var(--line);border-left:4px solid #7899bb;border-radius:11px;padding:10px;display:grid;gap:7px}
+.exercise-card.done{opacity:.72;background:#f2f6f3;border-left-color:#6e9b7c}
+.exercise-card.done .exercise-name{text-decoration:line-through;color:#718076}
+.exercise-card-top{display:flex;align-items:flex-start;gap:7px}
+.exercise-card-top input{width:17px;height:17px;flex:0 0 auto;margin:2px 0 0;accent-color:#6487b2}
+.exercise-name{font-size:12px;font-weight:650;line-height:1.3;flex:1;overflow-wrap:anywhere}
+.exercise-meta{font-size:10px;color:var(--muted)}
+.exercise-actions{display:flex;justify-content:flex-end;gap:4px}
+.exercise-actions button{border:0;background:#f1f4f7;color:#65758a;border-radius:7px;padding:4px 7px;font-size:11px}
+.exercise-empty{font-size:10px;color:#9aa3ae;padding:12px 5px;text-align:center}
+.exercise-progress{height:10px;margin:12px 0 8px;background:#e7edf3}
+.exercise-progress span{background:#6f91b5;transition:width .2s}
+@media(max-width:1100px){.exercise-board{grid-template-columns:repeat(4,minmax(155px,1fr))}}
+@media(max-width:650px){.exercise-board{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.exercise-day{min-height:180px}.exercise-day-head{padding:9px 8px}.exercise-day-list{padding:6px}.exercise-card{padding:8px}.exercise-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 </style>
 </head>
 <body>
@@ -233,6 +255,7 @@ textarea.journal{min-height:120px}
   <nav class="nav" id="nav">
     <button class="active" data-page="day"><span class="ico">◷</span><span>Meu dia</span></button>
     <button data-page="myWeek"><span class="ico">▦</span><span>Minha semana</span></button>
+    <button data-page="exercises"><span class="ico">♡</span><span>Exercícios</span></button>
     <button data-page="checklists"><span class="ico">☑</span><span>Checklists</span></button>
     <button data-page="plan"><span class="ico">◎</span><span>Plano de Ação</span></button>
     <button data-page="vision"><span class="ico">◇</span><span>Virtudes</span></button>
@@ -296,7 +319,23 @@ textarea.journal{min-height:120px}
     </section>
   </section>
 
-  <section class="page" id="myWeek">
+  <section class="page" id="exercises">
+ <p class="intro">Organize sua rotina de exercícios por dia da semana e acompanhe sua consistência. As atividades cadastradas se repetem semanalmente até você editá-las ou excluí-las.</p>
+ <div class="grid stats exercise-stats">
+  <div class="stat"><span class="label">Execução da semana</span><strong id="exerciseExecution">0%</strong><small id="exerciseExecutionDetail">0 de 0 atividades concluídas</small></div>
+  <div class="stat"><span class="label">Atividades concluídas</span><strong id="exerciseDone">0</strong><small>Na semana selecionada</small></div>
+  <div class="stat"><span class="label">Atividades planejadas</span><strong id="exercisePlanned">0</strong><small>Ocorrências da semana</small></div>
+  <div class="stat"><span class="label">Minutos realizados</span><strong id="exerciseMinutes">0</strong><small>Tempo de exercício concluído</small></div>
+ </div>
+ <section class="card" style="padding:16px;margin:0 0 20px">
+  <div class="section-head" style="margin:0 0 8px"><div><h2 style="font-size:18px">Tracker semanal</h2><span class="small muted" id="exerciseWeekLabel">Acompanhamento da semana</span></div><input type="week" id="exerciseWeekPicker" style="width:auto"></div>
+  <div class="progress exercise-progress"><span id="exerciseProgressFill" style="width:0%"></span></div>
+  <div class="small muted" id="exerciseProgressText">Marque cada atividade ao concluir para atualizar seu indicador.</div>
+ </section>
+ <div class="section-head"><div><h2>Rotina de exercícios</h2><span class="small muted">Kanban por dia da semana · atividades recorrentes</span></div><button class="btn primary" id="addExerciseBtn">＋ Novo exercício</button></div>
+ <div id="exerciseBoard" class="exercise-board"></div>
+</section>
+<section class="page" id="myWeek">
  <p class="intro">Visualize suas atividades, recorrências e ações de projetos distribuídas ao longo da semana.</p>
  <div class="section-head"><h2 id="myWeekRange">Minha semana</h2><input type="week" id="myWeekPicker" style="width:auto"></div>
  <div id="myWeekCalendar" class="myweek-calendar"></div>
@@ -350,7 +389,7 @@ textarea.journal{min-height:120px}
     </div>
   </section>
 
-  <div class="footer-note">Life Dashboard V52: com sua conta conectada, os dados são sincronizados pela nuvem. Mantenha backups JSON periódicos.</div>
+  <div class="footer-note">Life Dashboard V56: com sua conta conectada, os dados são sincronizados pela nuvem. Mantenha backups JSON periódicos.</div>
 </main>
 </div>
 
@@ -365,7 +404,7 @@ const icons=["⌂","♡","✧","＄","⌘","❀","♡","☼"];
 const types=["Hábitos","Tarefas","Cuidados","Rotinas"];
 const stateKey="lifeDashboardV1";
 let data=load();
-function blank(){return {activities:[],recurringTasks:[],checklists:[],objectives:[],projects:[],standaloneActions:[],dayBrainDump:{},weeklyActionSelections:{},identity:{},references:[],weeklyScores:{},weeklyReviews:{},monthlyScores:{},notes:{}}}
+function blank(){return {exerciseActivities:[],activities:[],recurringTasks:[],checklists:[],objectives:[],projects:[],standaloneActions:[],dayBrainDump:{},weeklyActionSelections:{},identity:{},references:[],weeklyScores:{},weeklyReviews:{},monthlyScores:{},notes:{}}}
 function load(){try{let d={...blank(),...JSON.parse(localStorage.getItem(stateKey)||"{}")} ; if(!d.projects.length && Array.isArray(d.objectives)){d.projects=d.objectives.flatMap(o=>(o.projects||[]).map(pr=>({...pr,pillar:o.pillar??0,legacyObjective:o.name||""})));} d.standaloneActions=Array.isArray(d.standaloneActions)?d.standaloneActions:[];return d}catch(e){return blank()}}
 function save(){localStorage.setItem(stateKey,JSON.stringify(data));renderStats();scheduleCloudSync()}
 let supabaseClient=null,cloudUser=null,cloudReady=false,cloudBusy=false,cloudTimer=null,cloudDirty=false,cloudRevision=0,cloudLastUpdatedAt=null,cloudPollTimer=null;
@@ -1024,7 +1063,64 @@ function setupDayTabs(){
  ["recurringSearch","recurringPillarFilter","recurringFrequencyFilter","recurringStatusFilter"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener(id==="recurringSearch"?"input":"change",renderRecurringPanel)});
 }
 
-function renderAll(){renderDay();renderMyWeek();renderChecklist();renderPlan();renderVision();renderWeekly();renderStats();renderRecurringPanel()}
+
+/* V56 — Exercícios: recorrência semanal independente da agenda geral */
+const exerciseWeekdays=[{n:"Domingo",s:"Dom",v:0},{n:"Segunda",s:"Seg",v:1},{n:"Terça",s:"Ter",v:2},{n:"Quarta",s:"Qua",v:3},{n:"Quinta",s:"Qui",v:4},{n:"Sexta",s:"Sex",v:5},{n:"Sábado",s:"Sáb",v:6}];
+function exerciseWeekDates(){
+ const input=document.getElementById("exerciseWeekPicker"),value=input?.value||isoWeekValue(new Date());
+ const [year,week]=value.split("-W").map(Number),jan4=new Date(year,0,4),monday=new Date(jan4);
+ monday.setDate(jan4.getDate()-((jan4.getDay()+6)%7)+(week-1)*7);
+ return Array.from({length:7},(_,i)=>{const d=new Date(monday);d.setDate(monday.getDate()+i);return dateISO(d)});
+}
+function exerciseForm(item={}){
+ const selected=Array.isArray(item.days)?item.days:[];
+ const daysHtml=exerciseWeekdays.map(d=>'<label class="weekday-option"><input type="checkbox" name="days" value="'+d.v+'" '+(selected.includes(d.v)?"checked":"")+'>'+d.s+'</label>').join("");
+ openModal(item.id?"Editar exercício":"Novo exercício",`
+ <form><div class="form-grid">
+  <div class="field full"><label>Nome do exercício</label><input name="name" required maxlength="90" value="${esc(item.name||"")}" placeholder="Ex.: musculação, caminhada, mobilidade..."></div>
+  <div class="field"><label>Categoria</label><select name="category"><option value="Musculação" ${item.category==="Musculação"?"selected":""}>Musculação</option><option value="Cardio" ${item.category==="Cardio"?"selected":""}>Cardio</option><option value="Mobilidade" ${item.category==="Mobilidade"?"selected":""}>Mobilidade</option><option value="Alongamento" ${item.category==="Alongamento"?"selected":""}>Alongamento</option><option value="Esporte" ${item.category==="Esporte"?"selected":""}>Esporte</option><option value="Outro" ${item.category==="Outro"?"selected":""}>Outro</option></select></div>
+  <div class="field"><label>Duração prevista (minutos)</label><input name="minutes" type="number" min="1" max="600" value="${Number(item.minutes)||30}" required></div>
+  <div class="field full"><label>Repetir toda semana em</label><div class="weekday-options">${daysHtml}</div><small class="muted">Selecione um ou mais dias. A atividade aparecerá automaticamente em cada semana.</small></div>
+ </div><div class="toolbar" style="justify-content:flex-end;margin-top:16px"><button type="submit" class="btn primary">Salvar exercício</button></div></form>`,fd=>{
+  const days=fd.getAll("days").map(Number).sort((a,b)=>a-b);
+  if(!days.length){alert("Selecione pelo menos um dia da semana.");return}
+  const record={id:item.id||crypto.randomUUID(),name:String(fd.get("name")).trim(),category:fd.get("category"),minutes:Number(fd.get("minutes"))||30,days,completedDates:Array.isArray(item.completedDates)?item.completedDates:[],createdAt:item.createdAt||new Date().toISOString()};
+  if(item.id){const i=data.exerciseActivities.findIndex(x=>x.id===item.id);if(i>=0)data.exerciseActivities[i]=record}
+  else data.exerciseActivities.push(record);
+  save();renderExercises();
+ });
+}
+function renderExercises(){
+ const host=document.getElementById("exerciseBoard");if(!host)return;
+ data.exerciseActivities=Array.isArray(data.exerciseActivities)?data.exerciseActivities:[];
+ const dates=exerciseWeekDates(),picker=document.getElementById("exerciseWeekPicker");
+ if(picker&&!picker.value)picker.value=isoWeekValue(new Date());
+ const occurrences=[];
+ dates.forEach(date=>{const day=new Date(date+"T12:00:00").getDay();data.exerciseActivities.filter(a=>(a.days||[]).includes(day)).forEach(a=>occurrences.push({item:a,date,done:(a.completedDates||[]).includes(date)}))});
+ const total=occurrences.length,done=occurrences.filter(x=>x.done).length,pct=total?Math.round(done/total*100):0,minutes=occurrences.filter(x=>x.done).reduce((sum,x)=>sum+(Number(x.item.minutes)||0),0);
+ document.getElementById("exerciseExecution").textContent=pct+"%";
+ document.getElementById("exerciseExecutionDetail").textContent=done+" de "+total+" atividades concluídas";
+ document.getElementById("exerciseDone").textContent=done;document.getElementById("exercisePlanned").textContent=total;document.getElementById("exerciseMinutes").textContent=minutes;
+ document.getElementById("exerciseProgressFill").style.width=pct+"%";
+ document.getElementById("exerciseProgressText").textContent=total?(done+" de "+total+" sessões concluídas nesta semana ("+pct+"%)."):"Cadastre seus exercícios para iniciar o acompanhamento.";
+ const first=new Date(dates[0]+"T12:00:00"),last=new Date(dates[6]+"T12:00:00");
+ document.getElementById("exerciseWeekLabel").textContent=first.toLocaleDateString("pt-BR",{day:"2-digit",month:"short"})+" – "+last.toLocaleDateString("pt-BR",{day:"2-digit",month:"short",year:"numeric"});
+ host.innerHTML=exerciseWeekdays.map(day=>{
+  const date=dates.find(d=>new Date(d+"T12:00:00").getDay()===day.v),items=data.exerciseActivities.filter(a=>(a.days||[]).includes(day.v)),dayDone=items.filter(a=>(a.completedDates||[]).includes(date)).length;
+  return '<section class="exercise-day"><header class="exercise-day-head"><strong>'+day.n+'</strong><small>'+dayDone+'/'+items.length+'</small></header><div class="exercise-day-list">'+(items.length?items.map(a=>{
+   const isDone=(a.completedDates||[]).includes(date);
+   return '<article class="exercise-card '+(isDone?"done":"")+'"><div class="exercise-card-top"><input type="checkbox" '+(isDone?"checked":"")+' aria-label="Concluir '+esc(a.name)+'" onchange="toggleExercise(\''+a.id+'\',\''+date+'\',this.checked)"><div class="exercise-name">'+esc(a.name)+'</div></div><div class="exercise-meta">'+esc(a.category||"Exercício")+' · '+(Number(a.minutes)||0)+' min · semanal</div><div class="exercise-actions"><button type="button" onclick="editExercise(\''+a.id+'\')">Editar</button><button type="button" onclick="deleteExercise(\''+a.id+'\')">Excluir</button></div></article>';
+  }).join(""):'<div class="exercise-empty">Nenhum exercício</div>')+'</div></section>';
+ }).join("");
+}
+window.toggleExercise=(id,date,checked)=>{const a=data.exerciseActivities.find(x=>x.id===id);if(!a)return;a.completedDates=Array.isArray(a.completedDates)?a.completedDates:[];a.completedDates=a.completedDates.filter(d=>d!==date);if(checked)a.completedDates.push(date);save();renderExercises()};
+window.editExercise=id=>{const a=data.exerciseActivities.find(x=>x.id===id);if(a)exerciseForm(a)};
+window.deleteExercise=id=>{const a=data.exerciseActivities.find(x=>x.id===id);if(!a)return;if(!confirm('Excluir "'+a.name+'" da sua rotina recorrente? O histórico de conclusões também será removido.'))return;data.exerciseActivities=data.exerciseActivities.filter(x=>x.id!==id);save();renderExercises()};
+document.getElementById("addExerciseBtn").onclick=()=>exerciseForm();
+document.getElementById("exerciseWeekPicker").value=isoWeekValue(new Date());
+document.getElementById("exerciseWeekPicker").addEventListener("change",renderExercises);
+
+function renderAll(){renderDay();renderExercises();renderMyWeek();renderChecklist();renderPlan();renderVision();renderWeekly();renderStats();renderRecurringPanel()}
 setupDayTabs();
 renderAll();
 initCloud();

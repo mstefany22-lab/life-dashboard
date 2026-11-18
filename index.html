@@ -550,9 +550,47 @@ window.deleteActivity=id=>{
  }
  save();renderAll();
 };
-document.getElementById("addActivity").onclick=addActivity;document.getElementById("dayDate").onchange=renderDay;
-let week=false;document.getElementById("weekToggle").onclick=()=>{week=!week;document.getElementById("dayAgenda").style.display=week?"none":"grid";document.getElementById("dayPillars").style.display=week?"none":"grid";document.getElementById("weekView").style.display=week?"grid":"none";document.getElementById("weekToggle").textContent=week?"Voltar ao dia":"Expandir semana";if(week)renderWeek()};
-function renderWeek(){let base=new Date(document.getElementById("dayDate").value+"T12:00:00"),day=base.getDay(),monday=new Date(base);monday.setDate(base.getDate()+(day===0?-6:1-day));document.getElementById("weekView").innerHTML=Array.from({length:7},(_,i)=>{let x=new Date(monday);x.setDate(monday.getDate()+i);let ds=dateISO(x),arr=[...data.activities.filter(a=>a.date===ds),...allProjectActions().filter(a=>(a.plannedDate||a.start)===ds&&a.status!=="Cancelada").map(a=>({...a,start:a.startTime||"Sem horário",projectAction:true}))];return `<div class="card" style="padding:14px"><strong>${["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][x.getDay()]} · ${String(x.getDate()).padStart(2,"0")}/${String(x.getMonth()+1).padStart(2,"0")}</strong><div class="small muted">${arr.length} atividade(s)</div>${arr.map(a=>`<div class="small" style="margin-top:7px;padding:7px;border-radius:8px;background:${colors[a.pillar]}">${a.start} ${esc(a.name)}</div>`).join("")||'<p class="small muted">Sem atividades</p>'}</div>`}).join("")}
+document.getElementById("addActivity").onclick=addActivity;
+document.getElementById("dayDate").onchange=()=>{renderDay();if(week)renderWeek()};
+let week=false;
+document.getElementById("weekToggle").onclick=()=>{
+ week=!week;
+ document.getElementById("dayAgenda").style.display=week?"none":"grid";
+ document.getElementById("dayPillars").style.display=week?"none":"grid";
+ document.getElementById("weekView").style.display=week?"block":"none";
+ document.getElementById("weekToggle").textContent=week?"Voltar ao dia":"Expandir semana";
+ if(week)renderWeek();
+};
+function renderWeek(){
+ const selected=document.getElementById("dayDate").value||dateISO();
+ const base=new Date(selected+"T12:00:00");
+ const monday=new Date(base);
+ monday.setDate(base.getDate()+(base.getDay()===0?-6:1-base.getDay()));
+ const names=["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"];
+ const html=Array.from({length:7},(_,i)=>{
+  const date=new Date(monday);
+  date.setDate(monday.getDate()+i);
+  const ds=dateISO(date);
+  const recurring=(data.recurringTasks||[]).filter(t=>{
+   if(ds<(t.startDate||ds)||(t.until&&ds>t.until)||(t.excludedDates||[]).includes(ds))return false;
+   const origin=new Date((t.startDate||ds)+"T12:00:00");
+   return t.frequency==="daily"||
+    (t.frequency==="weekly"&&(t.days&&t.days.length?t.days.includes(date.getDay()):date.getDay()===origin.getDay()))||
+    (t.frequency==="monthly"&&date.getDate()===origin.getDate());
+  }).map(t=>({...t,start:t.start||"Sem horário",weeklyRecurring:true}));
+  const activities=(data.activities||[]).filter(a=>a.date===ds);
+  const actions=allProjectActions().filter(a=>(a.plannedDate||a.start)===ds&&a.status!=="Cancelada").map(a=>({...a,start:a.startTime||"Sem horário",weeklyProject:true}));
+  const items=[...activities,...recurring,...actions].sort((a,b)=>(a.start||"").localeCompare(b.start||""));
+  const rows=items.length?items.map(a=>{
+   const time=a.start&&a.start!=="Sem horário"?esc(a.start)+(a.end?"–"+esc(a.end):""):"Sem horário";
+   const kind=a.weeklyRecurring?"Recorrente":a.weeklyProject?"Ação de projeto":"Atividade";
+   const color=colors[Number(a.pillar)||0]||"#e8edf3";
+   return "<div style=\"display:flex;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-top:7px;background:#fff\"><span style=\"width:5px;align-self:stretch;border-radius:5px;background:"+color+"\"></span><span class=\"small muted\" style=\"min-width:78px\">"+time+"</span><span style=\"flex:1;min-width:0\"><strong style=\"font-size:12px\">"+esc(a.name||"Atividade sem nome")+"</strong><span class=\"small muted\" style=\"display:block\">"+kind+(a.projectName?" · "+esc(a.projectName):"")+"</span></span></div>";
+  }).join(""):"<p class=\"small muted\" style=\"margin:10px 0 2px\">Nenhuma atividade cadastrada para este dia.</p>";
+  return "<section class=\"card\" style=\"padding:14px 16px;margin-bottom:10px\"><div style=\"display:flex;justify-content:space-between;align-items:center;gap:10px\"><strong>"+names[date.getDay()]+" · "+date.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})+"</strong><span class=\"small muted\">"+items.length+" atividade(s)</span></div>"+rows+"</section>";
+ }).join("");
+ document.getElementById("weekView").innerHTML=html;
+}
 function renderChecklist(){
 let host=document.getElementById("checklistPillars");
 host.innerHTML=pillars.map((p,i)=>`<button class="chip ${i===0?"active":""}" data-check-pillar="${i}">${p}</button>`).join("");

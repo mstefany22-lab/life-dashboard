@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Life Dashboard — V50</title>
+<title>Life Dashboard — V51</title>
 <style>
 :root{
  --bg:#eef1f5;--surface:#ffffff;--surface2:#e5e9ef;--ink:#303946;--muted:#7d8795;
@@ -550,9 +550,28 @@ window.deleteActivity=id=>{
  }
  save();renderAll();
 };
-document.getElementById("addActivity").onclick=addActivity;document.getElementById("dayDate").onchange=renderDay;
+document.getElementById("addActivity").onclick=addActivity;
+document.getElementById("dayDate").onchange=()=>{renderDay();if(week)renderWeek()};
 let week=false;document.getElementById("weekToggle").onclick=()=>{week=!week;document.getElementById("dayAgenda").style.display=week?"none":"grid";document.getElementById("dayPillars").style.display=week?"none":"grid";document.getElementById("weekView").style.display=week?"grid":"none";document.getElementById("weekToggle").textContent=week?"Voltar ao dia":"Expandir semana";if(week)renderWeek()};
-function renderWeek(){let base=new Date(document.getElementById("dayDate").value+"T12:00:00"),day=base.getDay(),monday=new Date(base);monday.setDate(base.getDate()+(day===0?-6:1-day));document.getElementById("weekView").innerHTML=Array.from({length:7},(_,i)=>{let x=new Date(monday);x.setDate(monday.getDate()+i);let ds=dateISO(x),arr=[...data.activities.filter(a=>a.date===ds),...allProjectActions().filter(a=>(a.plannedDate||a.start)===ds&&a.status!=="Cancelada").map(a=>({...a,start:a.startTime||"Sem horário",projectAction:true}))];return `<div class="card" style="padding:14px"><strong>${["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][x.getDay()]} · ${String(x.getDate()).padStart(2,"0")}/${String(x.getMonth()+1).padStart(2,"0")}</strong><div class="small muted">${arr.length} atividade(s)</div>${arr.map(a=>`<div class="small" style="margin-top:7px;padding:7px;border-radius:8px;background:${colors[a.pillar]}">${a.start} ${esc(a.name)}</div>`).join("")||'<p class="small muted">Sem atividades</p>'}</div>`}).join("")}
+function renderWeek(){
+ const inputDate=document.getElementById("dayDate").value||dateISO();
+ const base=new Date(inputDate+"T12:00:00"),day=base.getDay(),monday=new Date(base);
+ monday.setDate(base.getDate()+(day===0?-6:1-day));
+ const dayNames=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+ document.getElementById("weekView").innerHTML=Array.from({length:7},(_,i)=>{
+  const x=new Date(monday);x.setDate(monday.getDate()+i);
+  const ds=dateISO(x);
+  const recurring=data.recurringTasks.filter(t=>{
+   if(ds<t.startDate||(t.until&&ds>t.until)||(t.excludedDates||[]).includes(ds))return false;
+   const startDate=new Date((t.startDate||ds)+"T12:00:00");
+   return t.frequency==="daily"||(t.frequency==="weekly"&&(t.days&&t.days.length?t.days.includes(x.getDay()):x.getDay()===startDate.getDay()))||(t.frequency==="monthly"&&x.getDate()===startDate.getDate());
+  }).map(t=>({...t,start:t.start||"Sem horário",recurringItem:true}));
+  const activities=data.activities.filter(a=>a.date===ds);
+  const actions=allProjectActions().filter(a=>(a.plannedDate||a.start)===ds&&a.status!=="Cancelada").map(a=>({...a,start:a.startTime||"Sem horário",projectAction:true}));
+  const arr=[...activities,...recurring,...actions].sort((a,b)=>(a.start||"").localeCompare(b.start||""));
+  return "<div class=\"card\" style=\"padding:14px;min-width:0\"><strong>"+dayNames[x.getDay()]+" · "+String(x.getDate()).padStart(2,"0")+"/"+String(x.getMonth()+1).padStart(2,"0")+"</strong><div class=\"small muted\">"+arr.length+" atividade(s)</div>"+(arr.map(a=>"<div class=\"small\" style=\"margin-top:7px;padding:7px;border-radius:8px;background:"+(colors[Number(a.pillar)||0]||"#eef2f6")+"\">"+esc(a.start||"Sem horário")+" "+esc(a.name||"Atividade sem nome")+(a.recurringItem?" · Recorrente":a.projectAction&&a.projectName?" · "+esc(a.projectName):"")+"</div>").join("")||"<p class=\"small muted\">Sem atividades</p>")+"</div>";
+ }).join("");
+}
 function renderChecklist(){
 let host=document.getElementById("checklistPillars");
 host.innerHTML=pillars.map((p,i)=>`<button class="chip ${i===0?"active":""}" data-check-pillar="${i}">${p}</button>`).join("");

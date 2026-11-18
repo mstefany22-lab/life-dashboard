@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Life Dashboard — V46</title>
+<title>Life Dashboard — V47</title>
 <style>
 :root{
  --bg:#eef1f5;--surface:#ffffff;--surface2:#e5e9ef;--ink:#303946;--muted:#7d8795;
@@ -189,7 +189,7 @@ textarea.journal{min-height:120px}
 @media(max-width:700px){.recurring-filters{grid-template-columns:1fr 1fr}.recurring-filters input{grid-column:1/-1}.recurring-card{align-items:flex-start;gap:9px;padding:12px}.recurring-actions{flex-direction:column}.recurring-actions button{padding:6px 8px}.day-tab{flex:1;padding:10px 7px;font-size:12px}}
 
 
-/* V46 — Kanban por período com marcação de 30 minutos */
+/* V47 — Correção dos intervalos de 30 minutos sem duplicar atividades */
 .day-kanban{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
 .day-kanban-column{min-width:0;padding:13px;border:1px solid var(--line);border-radius:15px;background:#f7f8f7}
 .day-kanban-column.morning,.day-kanban-column.afternoon,.day-kanban-column.night{background:#f7f8f7}
@@ -423,7 +423,7 @@ const toClock=n=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padSt
 const borderColors=["#D1AE4D","#B86F75","#8D78B5","#648D73","#6487B2","#B77D9A","#B98645","#5B999A"];
 host.className="day-kanban";host.style.gridTemplateColumns="";host.style.gridAutoRows="";
 host.innerHTML=periods.map(period=>{
- const slots=[];for(let minute=period.start;minute<period.end;minute+=30){const slotEnd=Math.min(minute+60,period.end);const items=period.items.filter(a=>{const [h,m]=a.start.split(":").map(Number),value=h*60+m;return value>=minute&&value<slotEnd});slots.push({minute,items})}
+ const slots=[];for(let minute=period.start;minute<period.end;minute+=30){const slotEnd=Math.min(minute+30,period.end);const items=period.items.filter(a=>{const [h,m]=a.start.split(":").map(Number),value=h*60+m;return value>=minute&&value<slotEnd});slots.push({minute,items})}
  return `<section class="day-kanban-column ${period.key}"><div class="day-kanban-head"><div><strong>${period.label}</strong><span>${period.range}</span></div><span class="day-kanban-count">${period.items.length}</span></div><div class="day-kanban-list">${slots.map(slot=>`<div class="day-kanban-hour"><div class="day-kanban-hour-label">${toClock(slot.minute)}</div><div class="day-kanban-hour-content">${slot.items.length?slot.items.map(a=>{const color=borderColors[a.pillar]||"#7C8998";return `<article class="day-kanban-card ${a.status==="Concluída"?"done":""}" style="background:${colors[a.pillar]};border-left-color:${color}"><div class="day-kanban-card-main"><strong>${esc(a.name)}</strong><div class="meta">${esc(a.start)}–${esc(a.end)} · ${pillars[a.pillar]} · ${duration(a).toFixed(2).replace(".",",")}h</div><div class="day-kanban-status">${esc(a.status)}${a.recurringId?" · ↻ Recorrente":""}</div></div><div class="activity-actions">${a.projectAction?`<button title="Editar ação do projeto" onclick="editAction('${a.projectId}','${a.actionId}')">✎</button><button title="${a.status==="Concluída"?"Reabrir ação":"Concluir ação"}" onclick="toggleProjectActionStatus('${a.projectId}','${a.actionId}')">${a.status==="Concluída"?"↶":"✓"}</button>`:`<button type="button" title="Editar atividade" onclick="window.editActivity('${a.id}')">✎</button><button type="button" title="${a.status==="Concluída"?"Reabrir atividade":"Concluir atividade"}" onclick="window.toggleActivityStatus('${a.id}')">${a.status==="Concluída"?"↶":"✓"}</button>${a.checklist?`<button type="button" title="Abrir checklist" onclick="window.openActivityChecklist('${a.id}')">☑</button>`:""}<button type="button" title="Excluir atividade" onclick="window.deleteActivity('${a.id}')">×</button>`}</div></article>`}).join(""):`<div class="day-kanban-hour-empty">Livre</div>`}</div></div>`).join("")}</div><button class="day-kanban-add" onclick="addActivity('${toClock(period.start)}')">＋ Atividade</button></section>`;
 }).join("");let planned=arr.reduce((sum,a)=>sum+duration(a),0),actual=arr.reduce((sum,a)=>sum+(+a.actual||0),0),done=arr.filter(a=>a.status==="Concluída").length;
 document.getElementById("plannedHours").textContent=planned.toFixed(1).replace(".",",")+"h";document.getElementById("actualHours").textContent=actual.toFixed(1).replace(".",",")+"h";document.getElementById("execution").textContent=(arr.length?Math.round(done/arr.length*100):0)+"%";document.getElementById("doneCount").textContent=done;document.getElementById("doneCountDetail").textContent=`de ${arr.length} atividades planejadas`;

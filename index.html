@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Life Dashboard — V52</title>
+<title>Life Dashboard — V53</title>
 <style>
 :root{
  --bg:#eef1f5;--surface:#ffffff;--surface2:#e5e9ef;--ink:#303946;--muted:#7d8795;
@@ -529,7 +529,7 @@ window.openActivityChecklist=id=>{
  let a=null;
  const activityId=String(id);
  if(activityId.startsWith("rec-")){
-  const match=activityId.match(/^rec-(.+)-(\\d{4}-\\d{2}-\\d{2})$/);
+  const match=activityId.match(/^rec-(.+)-(\d{4}-\d{2}-\d{2})$/);
   if(match){
    const task=data.recurringTasks.find(x=>String(x.id)===match[1]);
    if(task)a={...task,id:activityId,date:match[2]};
@@ -538,7 +538,7 @@ window.openActivityChecklist=id=>{
   a=data.activities.find(x=>String(x.id)===activityId);
  }
  if(!a){alert("Não encontrei esta atividade para abrir o checklist.");return}
- const checklist=data.checklists.find(x=>String(x.id)===String(a.checklist));
+ const checklist=data.checklists.find(x=>String(x.id)===String(a.checklist)||String(x.name)===String(a.checklist));
  if(!checklist){alert("Esta atividade não tem checklist associado.");return}
  if(!Array.isArray(checklist.run)||checklist.runDate!==a.date){
   checklist.run=(checklist.items||[]).map(()=>false);

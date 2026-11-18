@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Life Dashboard — V47</title>
+<title>Life Dashboard — V48</title>
 <style>
 :root{
  --bg:#eef1f5;--surface:#ffffff;--surface2:#e5e9ef;--ink:#303946;--muted:#7d8795;
@@ -189,7 +189,7 @@ textarea.journal{min-height:120px}
 @media(max-width:700px){.recurring-filters{grid-template-columns:1fr 1fr}.recurring-filters input{grid-column:1/-1}.recurring-card{align-items:flex-start;gap:9px;padding:12px}.recurring-actions{flex-direction:column}.recurring-actions button{padding:6px 8px}.day-tab{flex:1;padding:10px 7px;font-size:12px}}
 
 
-/* V47 — Correção dos intervalos de 30 minutos sem duplicar atividades */
+/* V48 — Corrige abertura de checklist em atividades pontuais e recorrentes */
 .day-kanban{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
 .day-kanban-column{min-width:0;padding:13px;border:1px solid var(--line);border-radius:15px;background:#f7f8f7}
 .day-kanban-column.morning,.day-kanban-column.afternoon,.day-kanban-column.night{background:#f7f8f7}
@@ -450,7 +450,35 @@ window.editActivity=id=>{
 };
 window.toggleActivityStatus=id=>{if(String(id).startsWith("rec-")){const match=String(id).match(/^rec-(.+)-(\d{4}-\d{2}-\d{2})$/);if(!match)return;const rid=match[1],date=match[2],t=data.recurringTasks.find(x=>x.id===rid);if(!t)return;t.completedDates=t.completedDates||[];t.completedDates=t.completedDates.includes(date)?t.completedDates.filter(x=>x!==date):[...t.completedDates,date]}else{let a=data.activities.find(x=>x.id===id);if(!a)return;a.status=a.status==="Concluída"?"Pendente":"Concluída"}save();renderDay()};
 window.toggleProjectActionStatus=(pid,aid)=>{const standalone=!pid||pid==="independent",p=standalone?null:data.projects.find(x=>x.id===pid),a=standalone?(data.standaloneActions||[]).find(x=>x.id===aid):p?.actions.find(x=>x.id===aid);if(!a)return;a.status=a.status==="Concluída"?"Pendente":"Concluída";save();renderDay();renderPlan()};
-window.openActivityChecklist=id=>{let a=data.activities.find(x=>x.id===id);if(!a)return;let c=data.checklists.find(x=>x.id===a.checklist);if(!c){alert("Esta atividade não tem checklist associado.");return}if(!c.run||c.runDate!==a.date){c.run=c.items.map(()=>false);c.runDate=a.date;save()}openModal(c.name,`<p class="muted small">${pillars[c.pillar]} · Execução em ${a.date.split("-").reverse().join("/")}</p>${c.items.map((it,i)=>`<label class="checkline ${c.run[i]?"done":""}"><input type="checkbox" data-check="${i}" ${c.run[i]?"checked":""}><span>${esc(it.text)}</span></label>`).join("")}<p class="muted small">${c.run.filter(Boolean).length} de ${c.items.length} concluídos nesta execução.</p>`,()=>{});document.querySelectorAll("[data-check]").forEach(el=>el.onchange=()=>{c.run[+el.dataset.check]=el.checked;save();window.openActivityChecklist(id)})};
+window.openActivityChecklist=id=>{
+ let a=null;
+ const activityId=String(id);
+ if(activityId.startsWith("rec-")){
+  const match=activityId.match(/^rec-(.+)-(\\d{4}-\\d{2}-\\d{2})$/);
+  if(match){
+   const task=data.recurringTasks.find(x=>String(x.id)===match[1]);
+   if(task)a={...task,id:activityId,date:match[2]};
+  }
+ }else{
+  a=data.activities.find(x=>String(x.id)===activityId);
+ }
+ if(!a){alert("Não encontrei esta atividade para abrir o checklist.");return}
+ const checklist=data.checklists.find(x=>String(x.id)===String(a.checklist));
+ if(!checklist){alert("Esta atividade não tem checklist associado.");return}
+ if(!Array.isArray(checklist.run)||checklist.runDate!==a.date){
+  checklist.run=(checklist.items||[]).map(()=>false);
+  checklist.runDate=a.date;
+  save();
+ }
+ const items=checklist.items||[];
+ openModal(checklist.name,`<p class="muted small">${pillars[a.pillar]||""} · Execução em ${String(a.date||"").split("-").reverse().join("/")}</p>${items.map((it,i)=>`<label class="checkline ${checklist.run[i]?"done":""}"><input type="checkbox" data-check="${i}" ${checklist.run[i]?"checked":""}><span>${esc(it.text||it)}</span></label>`).join("")}<p class="muted small">${checklist.run.filter(Boolean).length} de ${items.length} concluídos nesta execução.</p>`,()=>{});
+ document.querySelectorAll("#modalBody [data-check]").forEach(el=>el.onchange=()=>{
+  checklist.run[+el.dataset.check]=el.checked;
+  save();
+  window.openActivityChecklist(id);
+ });
+};
+
 window.deleteActivity=id=>{
  const isRecurring=String(id).startsWith("rec-");
  const message=isRecurring?"Excluir esta ocorrência da atividade recorrente?":"Excluir esta atividade?";

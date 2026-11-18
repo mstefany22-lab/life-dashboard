@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Life Dashboard — V48</title>
+<title>Life Dashboard — V49</title>
 <style>
 :root{
  --bg:#eef1f5;--surface:#ffffff;--surface2:#e5e9ef;--ink:#303946;--muted:#7d8795;
@@ -189,7 +189,7 @@ textarea.journal{min-height:120px}
 @media(max-width:700px){.recurring-filters{grid-template-columns:1fr 1fr}.recurring-filters input{grid-column:1/-1}.recurring-card{align-items:flex-start;gap:9px;padding:12px}.recurring-actions{flex-direction:column}.recurring-actions button{padding:6px 8px}.day-tab{flex:1;padding:10px 7px;font-size:12px}}
 
 
-/* V48 — Corrige abertura de checklist em atividades pontuais e recorrentes */
+/* V49 — Brain Dump diário acima da agenda */
 .day-kanban{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
 .day-kanban-column{min-width:0;padding:13px;border:1px solid var(--line);border-radius:15px;background:#f7f8f7}
 .day-kanban-column.morning,.day-kanban-column.afternoon,.day-kanban-column.night{background:#f7f8f7}
@@ -258,6 +258,14 @@ textarea.journal{min-height:120px}
     <section id="dayUnscheduledSection" class="card" style="padding:16px;margin-top:14px;display:none">
       <div class="section-head"><h2>Atividades sem horário</h2><span class="small muted">Planejadas para este dia</span></div>
       <div id="dayUnscheduledList"></div>
+    </section>
+    <section class="card" id="dayBrainDumpCard" style="padding:16px;margin:18px 0">
+      <div class="section-head" style="margin:0 0 10px"><div><h2>Brain Dump</h2><span class="small muted">Capture ideias, lembretes e tarefas ao longo do dia</span></div><span class="small muted" id="dayBrainDumpCount">0 itens</span></div>
+      <div style="display:flex;gap:8px;align-items:flex-start;margin:10px 0">
+        <textarea id="dayBrainDumpInput" rows="2" placeholder="Anote aqui tudo o que surgir durante o dia..." style="flex:1;min-width:0;resize:vertical"></textarea>
+        <button class="btn primary" type="button" id="dayBrainDumpAdd">＋ Adicionar</button>
+      </div>
+      <div id="dayBrainDumpList"></div>
     </section>
     <div class="section-head"><h2>Agenda</h2><div class="toolbar"><input id="dayDate" type="date" style="width:auto"><button class="btn" id="weekToggle">Expandir semana</button><button class="btn primary" id="addActivity">＋ Atividade</button></div></div>
     <div id="dayAgenda" class="agenda"></div>
@@ -338,7 +346,7 @@ const icons=["⌂","♡","✧","＄","⌘","❀","♡","☼"];
 const types=["Hábitos","Tarefas","Cuidados","Rotinas"];
 const stateKey="lifeDashboardV1";
 let data=load();
-function blank(){return {activities:[],recurringTasks:[],checklists:[],objectives:[],projects:[],standaloneActions:[],weeklyActionSelections:{},identity:{},references:[],weeklyScores:{},weeklyReviews:{},monthlyScores:{},notes:{}}}
+function blank(){return {activities:[],recurringTasks:[],checklists:[],objectives:[],projects:[],standaloneActions:[],dayBrainDump:{},weeklyActionSelections:{},identity:{},references:[],weeklyScores:{},weeklyReviews:{},monthlyScores:{},notes:{}}}
 function load(){try{let d={...blank(),...JSON.parse(localStorage.getItem(stateKey)||"{}")} ; if(!d.projects.length && Array.isArray(d.objectives)){d.projects=d.objectives.flatMap(o=>(o.projects||[]).map(pr=>({...pr,pillar:o.pillar??0,legacyObjective:o.name||""})));} d.standaloneActions=Array.isArray(d.standaloneActions)?d.standaloneActions:[];return d}catch(e){return blank()}}
 function save(){localStorage.setItem(stateKey,JSON.stringify(data));renderStats();scheduleCloudSync()}
 let supabaseClient=null,cloudUser=null,cloudReady=false,cloudBusy=false,cloudTimer=null,cloudDirty=false,cloudRevision=0,cloudLastUpdatedAt=null,cloudPollTimer=null;
@@ -406,8 +414,52 @@ function openModal(title,html,after){document.getElementById("modalTitle").textC
 function field(label,name,type="text",extra=""){return `<div class="field"><label>${label}</label><input name="${name}" type="${type}" ${extra}></div>`}
 function pillarSelect(){return `<div class="field"><label>Pilar da vida</label><select name="pillar">${pillars.map((p,i)=>`<option value="${i}">${p}</option>`).join("")}</select></div>`}
 function addActivity(startTime=""){openModal("Adicionar atividade",`<form><div class="form-grid">${field("Nome da atividade","name")}${pillarSelect()}${field("Início","start","time",'required')}${field("Término","end","time",'required')}${field("Horas realizadas","actual","number",'step="0.25" min="0" value="0"') }<div class="field"><label>Status</label><select name="status"><option>Pendente</option><option>Em andamento</option><option>Concluída</option></select></div><div class="field full"><label>Checklist associado (opcional)</label><select name="checklist"><option value="">Nenhum</option>${data.checklists.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div><div class="field full"><label>Repetição</label><select name="repeat" id="repeatSelect"><option value="none">Não se repete</option><option value="daily">Todos os dias</option><option value="weekly">Toda semana</option><option value="monthly">Todo mês</option></select></div><div class="field full" id="repeatDaysWrap" style="display:none"><label>Repetir nestes dias</label><div class="weekday-options">${["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].map((d,i)=>`<label class="weekday-option"><input type="checkbox" name="repeatDays" value="${i}"> ${d}</label>`).join("")}</div></div><div class="field full" id="repeatUntilWrap" style="display:none"><label>Repetir até (opcional)</label><input name="until" type="date" min="${document.getElementById("dayDate").value}"><small class="muted">Sem data final, a recorrência continua indefinidamente.</small></div><div class="field full"><label>Observações</label><textarea name="notes"></textarea></div></div><div style="margin-top:16px;text-align:right"><button class="btn primary">Salvar atividade</button></div></form>`,f=>{let base={name:f.get("name"),pillar:+f.get("pillar"),start:f.get("start"),end:f.get("end"),actual:+f.get("actual"),status:f.get("status"),checklist:f.get("checklist"),notes:f.get("notes")};let repeat=f.get("repeat");if(repeat==="none")data.activities.push({id:crypto.randomUUID(),date:document.getElementById("dayDate").value,...base});else {let days=f.getAll("repeatDays").map(Number);if(repeat==="weekly"&&!days.length){alert("Selecione pelo menos um dia da semana.");return}data.recurringTasks.push({id:crypto.randomUUID(),...base,frequency:repeat,days:repeat==="weekly"?days:[],startDate:document.getElementById("dayDate").value,until:f.get("until")||"",completedDates:[],excludedDates:[]})};save();renderAll()});if(startTime){const input=document.querySelector('#modalBody input[name="start"]');if(input)input.value=startTime}document.getElementById("repeatSelect").onchange=e=>{document.getElementById("repeatUntilWrap").style.display=e.target.value==="none"?"none":"block";document.getElementById("repeatDaysWrap").style.display=e.target.value==="weekly"?"block":"none"}}function duration(a){if(!a.start||!a.end)return 0;let [h,m]=a.start.split(":").map(Number),[eh,em]=a.end.split(":").map(Number);let n=(eh*60+em-h*60-m)/60;return Math.max(0,n)}
+function renderDayBrainDump(date){
+ data.dayBrainDump=data.dayBrainDump||{};
+ const items=data.dayBrainDump[date]||[];
+ const list=document.getElementById("dayBrainDumpList");
+ const count=document.getElementById("dayBrainDumpCount");
+ const input=document.getElementById("dayBrainDumpInput");
+ const add=document.getElementById("dayBrainDumpAdd");
+ if(!list||!input||!add)return;
+ if(count)count.textContent=items.length+" "+(items.length===1?"item":"itens");
+ list.innerHTML=items.length?items.map((item,i)=>`<div style="display:flex;align-items:center;gap:9px;padding:9px 2px;border-bottom:1px solid var(--line)">
+  <input type="checkbox" ${item.done?"checked":""} aria-label="Concluir anotação" onchange="toggleDayBrainDumpItem('${date}',${i},this.checked)" style="width:17px;height:17px;accent-color:var(--sage);flex:0 0 auto">
+  <span style="flex:1;min-width:0;overflow-wrap:anywhere;${item.done?"text-decoration:line-through;opacity:.55":""}">${esc(item.text)}</span>
+  <button type="button" class="icon-btn" title="Editar anotação" onclick="editDayBrainDumpItem('${date}',${i})">✎</button>
+  <button type="button" class="icon-btn" title="Excluir anotação" onclick="deleteDayBrainDumpItem('${date}',${i})">×</button>
+ </div>`).join(""):'<div class="small muted" style="padding:10px 2px">Nenhuma anotação ainda. Use este espaço para capturar tudo o que surgir.</div>';
+ add.onclick=()=>{
+  const textValue=input.value.trim();
+  if(!textValue)return;
+  data.dayBrainDump[date]=data.dayBrainDump[date]||[];
+  data.dayBrainDump[date].push({id:crypto.randomUUID(),text:textValue,done:false});
+  input.value="";
+  save();
+  renderDayBrainDump(date);
+  input.focus();
+ };
+ input.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();add.click()}};
+}
+window.toggleDayBrainDumpItem=(date,index,checked)=>{
+ const items=data.dayBrainDump?.[date];if(!items||!items[index])return;
+ items[index].done=checked;save();renderDayBrainDump(date);
+};
+window.editDayBrainDumpItem=(date,index)=>{
+ const items=data.dayBrainDump?.[date];if(!items||!items[index])return;
+ const updated=prompt("Editar anotação:",items[index].text);
+ if(updated===null)return;
+ if(!updated.trim()){alert("A anotação não pode ficar vazia.");return}
+ items[index].text=updated.trim();save();renderDayBrainDump(date);
+};
+window.deleteDayBrainDumpItem=(date,index)=>{
+ const items=data.dayBrainDump?.[date];if(!items||!items[index])return;
+ items.splice(index,1);if(!items.length)delete data.dayBrainDump[date];
+ save();renderDayBrainDump(date);
+};
 function renderDay(){
 let d=document.getElementById("dayDate").value||today, dateObj=new Date(d+"T12:00:00");
+renderDayBrainDump(d);
 let recurring=data.recurringTasks.filter(t=>{if(d<t.startDate||(t.until&&d>t.until)||(t.excludedDates||[]).includes(d))return false;let st=new Date(t.startDate+"T12:00:00");return t.frequency==="daily"||(t.frequency==="weekly"&&(t.days?.length?t.days.includes(dateObj.getDay()):dateObj.getDay()===st.getDay()))||(t.frequency==="monthly"&&dateObj.getDate()===st.getDate())}).map(t=>({...t,id:"rec-"+t.id+"-"+d,date:d,recurringId:t.id,status:(t.completedDates||[]).includes(d)?"Concluída":"Pendente"}));
 const plannedDayActions=allProjectActions().filter(a=>(a.plannedDate||a.start)===d&&a.status!=="Cancelada").map(a=>({...a,id:"planned-action-"+a.id,date:d,start:a.startTime||"",end:a.endTime||"",pillar:Number(a.pillar)||0,status:a.status==="Concluída"?"Concluída":"Pendente",projectAction:true,projectId:a.projectId,actionId:a.id,actual:Number(a.actual)||0}));
 let projectDayActions=plannedDayActions.filter(a=>a.start&&a.end);

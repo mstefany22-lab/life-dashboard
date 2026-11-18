@@ -1118,7 +1118,7 @@ window.openExerciseChecklist=(id,date)=>{
  if(!exercise)return;
  const template=data.checklists.find(x=>String(x.id)===String(exercise.checklist));
  if(!template){alert("Selecione um checklist na edição deste exercício.");return}
- const items=(template.items||[]).flatMap(item=>String(item.text??item).split(/\\r?\\n/).filter(text=>text.trim()).map(text=>text.trim()));
+ const items=(template.items||[]).flatMap(item=>String(item.text??item).split(/\r?\n/).filter(text=>text.trim()).map(text=>text.trim()));
  if(!items.length){alert("O checklist associado não possui itens.");return}
  exercise.checklistRuns=exercise.checklistRuns&&typeof exercise.checklistRuns==="object"?exercise.checklistRuns:{};
  const run=Array.isArray(exercise.checklistRuns[date])?exercise.checklistRuns[date]:items.map(()=>false);

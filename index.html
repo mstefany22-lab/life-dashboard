@@ -1065,7 +1065,7 @@ function setupDayTabs(){
 
 
 /* V56 — Exercícios: recorrência semanal independente da agenda geral */
-const exerciseWeekdays=[{n:"Domingo",s:"Dom",v:0},{n:"Segunda",s:"Seg",v:1},{n:"Terça",s:"Ter",v:2},{n:"Quarta",s:"Qua",v:3},{n:"Quinta",s:"Qui",v:4},{n:"Sexta",s:"Sex",v:5},{n:"Sábado",s:"Sáb",v:6}];
+const exerciseWeekdays=[{n:"Segunda",s:"Seg",v:1},{n:"Terça",s:"Ter",v:2},{n:"Quarta",s:"Qua",v:3},{n:"Quinta",s:"Qui",v:4},{n:"Sexta",s:"Sex",v:5},{n:"Sábado",s:"Sáb",v:6},{n:"Domingo",s:"Dom",v:0}];
 function exerciseWeekDates(){
  const input=document.getElementById("exerciseWeekPicker"),value=input?.value||isoWeekValue(new Date());
  const [year,week]=value.split("-W").map(Number),jan4=new Date(year,0,4),monday=new Date(jan4);

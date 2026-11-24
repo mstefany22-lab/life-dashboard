@@ -889,6 +889,7 @@ function renderDay(){
    '<div class="day-fixed-main"><strong>'+esc(a.name)+'</strong><div class="meta">'+esc(meta)+'</div></div>'+
    '<div class="day-fixed-controls"><label class="day-fixed-real"><span>Real</span><input type="number" min="0" step="0.25" value="'+(actualValue?String(actualValue).replace(".",","):"0")+'" aria-label="Horas realizadas para '+esc(a.name)+'" onchange="setFixedActual(\''+kind+'\',\''+id+'\',this.value)"><span>h</span></label>'+
    '<label class="day-fixed-check"><input type="checkbox" '+(done?"checked":"")+' onchange="setFixedDone(\''+kind+'\',\''+id+'\',\''+d+'\',this.checked)"><span>Concluída</span></label>'+
+   (data.checklists||[]).some(x=>String(x.id)===String(a.checklist)||String(x.name)===String(a.checklist))?'<button type="button" class="day-fixed-edit" onclick="openActivityChecklist(\''+kind+'\',\''+id+'\',\''+d+'\')">Checklist</button>':'')+
    '<button type="button" class="day-fixed-edit" onclick="'+edit+'">Editar</button>'+
    '</div></article>';
  }
@@ -945,38 +946,48 @@ window.editActivity=id=>{
 };
 window.toggleActivityStatus=id=>{if(String(id).startsWith("rec-")){const match=String(id).match(/^rec-(.+)-(\d{4}-\d{2}-\d{2})$/);if(!match)return;const rid=match[1],date=match[2],t=data.recurringTasks.find(x=>x.id===rid);if(!t)return;t.completedDates=t.completedDates||[];t.completedDates=t.completedDates.includes(date)?t.completedDates.filter(x=>x!==date):[...t.completedDates,date]}else{let a=data.activities.find(x=>x.id===id);if(!a)return;a.status=a.status==="Concluída"?"Pendente":"Concluída"}save();renderDay()};
 window.toggleProjectActionStatus=(pid,aid)=>{const a=projectActionSource(pid,aid);if(!a)return;setProjectActionStatus(pid,aid,a.status==="Concluída"?"Pendente":"Concluída")};
-window.openActivityChecklist=id=>{
+window.openActivityChecklist=(kind,id,date)=>{
+ const activityId=String(id),day=String(date||document.getElementById("dayDate").value||today);
  let a=null;
- const activityId=String(id);
- if(activityId.startsWith("rec-")){
+ if(kind==="recurring"||activityId.startsWith("rec-")){
   const match=activityId.match(/^rec-(.+)-(\d{4}-\d{2}-\d{2})$/);
-  if(match){
-   const task=data.recurringTasks.find(x=>String(x.id)===match[1]);
-   if(task)a={...task,id:activityId,date:match[2]};
-  }
+  const task=match&&data.recurringTasks.find(x=>String(x.id)===match[1]);
+  if(task)a={...task,id:activityId,date:match[2]};
+ }else if(kind==="project"){
+  const source=allProjectActions().find(x=>String(x.id)===activityId);
+  if(source)a={...source,date:day};
+ }else if(kind==="exercise"){
+  const source=(data.exerciseActivities||[]).find(x=>String(x.id)===activityId);
+  if(source)a={...source,date:day};
  }else{
-  a=data.activities.find(x=>String(x.id)===activityId);
+  const source=data.activities.find(x=>String(x.id)===activityId);
+  if(source)a={...source,date:source.date||day};
  }
- if(!a){alert("Não encontrei esta atividade para abrir o checklist.");return}
- const checklist=data.checklists.find(x=>String(x.id)===String(a.checklist)||String(x.name)===String(a.checklist));
- if(!checklist){alert("Esta atividade não tem checklist associado.");return}
- if(!Array.isArray(checklist.run)||checklist.runDate!==a.date){
-  checklist.run=(checklist.items||[]).map(()=>false);
-  checklist.runDate=a.date;
+ if(!a){alert("Não encontrei este compromisso para abrir o checklist.");return}
+ const checklist=(data.checklists||[]).find(x=>String(x.id)===String(a.checklist)||String(x.name)===String(a.checklist));
+ if(!checklist){alert("Este compromisso não tem checklist associado.");return}
+ const items=(checklist.items||[]).map(item=>String(item.text??item).trim()).filter(Boolean);
+ if(!items.length){alert("Este checklist ainda não possui itens.");return}
+ checklist.executions=checklist.executions&&typeof checklist.executions==="object"?checklist.executions:{};
+ const runKey=[kind||"personal",activityId,day].join("|");
+ let run=checklist.executions[runKey];
+ if(!Array.isArray(run)){
+  run=(checklist.runDate===day&&Array.isArray(checklist.run)?checklist.run:[]).slice(0,items.length);
+  run=items.map((_,i)=>Boolean(run[i]));
+  checklist.executions[runKey]=run;
   save();
  }
- checklist.items=(checklist.items||[]).flatMap(item=>String(item.text??item).split(/\r?\n/).filter(text=>text.trim()).map(text=>({text:text.trim(),notes:""})));
- if(!Array.isArray(checklist.run)||checklist.run.length!==checklist.items.length||checklist.runDate!==a.date){
-  checklist.run=checklist.items.map(()=>false);
-  checklist.runDate=a.date;
-  save();
- }
- const items=checklist.items;
- openModal(checklist.name,`<p class="muted small">${pillars[a.pillar]||""} · Execução em ${String(a.date||"").split("-").reverse().join("/")}</p>${items.map((it,i)=>`<label class="checkline ${checklist.run[i]?"done":""}"><input type="checkbox" data-check="${i}" ${checklist.run[i]?"checked":""}><span>${esc(it.text||it)}</span></label>`).join("")}<p class="muted small">${checklist.run.filter(Boolean).length} de ${items.length} concluídos nesta execução.</p>`,()=>{});
+ const rows=items.map((item,i)=>'<label class="checkline '+(run[i]?"done":"")+'"><input type="checkbox" data-check="'+i+'" '+(run[i]?"checked":"")+'><span>'+esc(item)+'</span></label>').join("");
+ openModal(checklist.name,'<p class="muted small">'+esc(pillars[Number(a.pillar)||0]||"")+' · Execução em '+esc(day.split("-").reverse().join("/"))+'</p><div id="activityChecklistItems">'+rows+'</div><p id="activityChecklistProgress" class="muted small">'+run.filter(Boolean).length+' de '+items.length+' concluídos nesta execução.</p>',()=>{});
  document.querySelectorAll("#modalBody [data-check]").forEach(el=>el.onchange=()=>{
-  checklist.run[+el.dataset.check]=el.checked;
+  const index=Number(el.dataset.check);
+  run[index]=el.checked;
+  checklist.executions[runKey]=run;
   save();
-  window.openActivityChecklist(id);
+  el.closest("label").classList.toggle("done",el.checked);
+  const count=run.filter(Boolean).length;
+  const progress=document.getElementById("activityChecklistProgress");
+  if(progress)progress.textContent=count+" de "+items.length+" concluídos nesta execução.";
  });
 };
 

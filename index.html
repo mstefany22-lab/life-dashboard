@@ -811,8 +811,20 @@ function renderDayExercises(date){
  }).join(""):'<div class="small muted" style="padding:10px 2px">Nenhum exercício programado para esta data. Cadastre ou ajuste os dias na aba Exercícios.</div>';
 }
 
+function applyActionLifecycle(action,status){
+ const now=new Date().toISOString();
+ const previous=action.status||"";
+ if(status==="Em execução"&&!action.startedAt)action.startedAt=now;
+ if(status==="Concluída"&&!action.completedAt)action.completedAt=now;
+ action.status=status;
+}
+function formatActionDate(value){
+ if(!value)return "—";
+ const d=new Date(value);
+ return Number.isNaN(d.getTime())?"—":d.toLocaleDateString("pt-BR");
+}
 function projectActionSource(pid,aid){const standalone=!pid||pid==="independent",p=standalone?null:data.projects.find(x=>x.id===pid);return standalone?(data.standaloneActions||[]).find(x=>x.id===aid):p?.actions.find(x=>x.id===aid)}
-function setProjectActionStatus(pid,aid,status){const a=projectActionSource(pid,aid);if(!a)return;a.status=status;if(status==="Concluída")a.completedAt=new Date().toISOString();else delete a.completedAt;save();renderDay();renderPlan();renderDayHistory()}
+function setProjectActionStatus(pid,aid,status){const a=projectActionSource(pid,aid);if(!a)return;applyActionLifecycle(a,status);save();renderDay();renderPlan();renderDayHistory()}
 window.setProjectActionStatus=setProjectActionStatus;
 function renderProjectActionKanban(){
  const host=document.getElementById("dayActionKanban");if(!host)return;
@@ -899,7 +911,7 @@ window.setFixedDone=(kind,id,date,checked)=>{
   const t=match&&data.recurringTasks.find(x=>String(x.id)===match[1]);
   if(t){t.completedDates=Array.isArray(t.completedDates)?t.completedDates:[];t.completedDates=t.completedDates.filter(x=>x!==date);if(checked)t.completedDates.push(date)}
  }else if(kind==="project"){
-  const a=allProjectActions().find(x=>String(x.id)===String(id));if(a){a.status=checked?"Concluída":"Pendente";if(checked)a.completedAt=new Date().toISOString();else delete a.completedAt}
+  const a=allProjectActions().find(x=>String(x.id)===String(id));if(a)applyActionLifecycle(a,checked?"Concluída":"Pendente")
  }else if(kind==="exercise"){
   const a=(data.exerciseActivities||[]).find(x=>String(x.id)===String(id));if(a){a.completedDates=Array.isArray(a.completedDates)?a.completedDates:[];a.completedDates=a.completedDates.filter(x=>x!==date);if(checked)a.completedDates.push(date)}
  }
@@ -1120,7 +1132,7 @@ window.addAction=pid=>{
   const st=f.get("startTime"),en=f.get("endTime");
   if(st&&en&&timeToMinutes(en)<=timeToMinutes(st)){alert("A hora de término deve ser posterior à hora de início.");return}
   const action={id:crypto.randomUUID(),name:f.get("name"),priority:f.get("priority"),description:f.get("description"),plannedDate:f.get("plannedDate"),startTime:st,endTime:en,plannedHours:Number(f.get("plannedHours"))||0,estimate:Number(f.get("plannedHours"))||0,actual:Number(f.get("actual"))||0,pillar:standalone?Number(f.get("pillar")):Number(p.pillar??0),status:f.get("status"),notes:f.get("notes")};
-  if(standalone)data.standaloneActions.push(action);else p.actions.push(action);
+  if(action.status==="Em execução"||action.status==="Concluída")applyActionLifecycle(action,action.status);if(standalone)data.standaloneActions.push(action);else p.actions.push(action);
   save();renderPlan();renderDay();
  });
 };
@@ -1132,7 +1144,7 @@ window.editAction=(pid,aid)=>{
  if(!a)return;
  openModal("Editar ação",`<form><div class="form-grid">${field("Nome da ação","name","text",`required value="${esc(a.name||"")}"`)}<div class="field"><label>Prioridade</label><select name="priority">${["Alta","Média","Baixa"].map(x=>`<option ${a.priority===x?"selected":""}>${x}</option>`).join("")}</select></div><div class="field full"><label>Descrição</label><textarea name="description">${esc(a.description||"")}</textarea></div>${field("Data planejada","plannedDate","date",`value="${a.plannedDate||a.start||""}"`)}${field("Hora de início","startTime","time",`value="${a.startTime||""}"`)}${field("Hora de término","endTime","time",`value="${a.endTime||""}"`)}${field("Horas planejadas","plannedHours","number",`min="0" step=".25" value="${a.plannedHours??a.estimate??0}"`)}${field("Horas realizadas","actual","number",`min="0" step=".25" value="${a.actual??0}"`)}${standalone?`<div class="field"><label>Pilar</label><select name="pillar">${pillars.map((x,i)=>`<option value="${i}" ${Number(a.pillar??0)===i?"selected":""}>${x}</option>`).join("")}</select></div>`:`<div class="field"><label>Pilar herdado do projeto</label><input value="${pillars[Number(p.pillar)||0]}" disabled></div>`}<div class="field"><label>Status</label><select name="status">${["Próximas ações","Fila Meu Dia","Em execução","Concluída"].map(x=>`<option ${(a.status||"Próximas ações")===x?"selected":""}>${x}</option>`).join("")}</select></div><div class="field full"><label>Observações</label><textarea name="notes">${esc(a.notes||"")}</textarea></div></div><div style="text-align:right;margin-top:15px"><button class="btn primary">Salvar alterações</button></div></form>`,f=>{
   const st=f.get("startTime"),en=f.get("endTime");if(st&&en&&timeToMinutes(en)<=timeToMinutes(st)){alert("A hora de término deve ser posterior à hora de início.");return}
-  Object.assign(a,{name:f.get("name"),priority:f.get("priority"),description:f.get("description"),plannedDate:f.get("plannedDate"),startTime:st,endTime:en,plannedHours:Number(f.get("plannedHours"))||0,estimate:Number(f.get("plannedHours"))||0,actual:Number(f.get("actual"))||0,status:f.get("status"),notes:f.get("notes")});if(a.status==="Concluída")a.completedAt=a.completedAt||new Date().toISOString();else delete a.completedAt;
+  Object.assign(a,{name:f.get("name"),priority:f.get("priority"),description:f.get("description"),plannedDate:f.get("plannedDate"),startTime:st,endTime:en,plannedHours:Number(f.get("plannedHours"))||0,estimate:Number(f.get("plannedHours"))||0,actual:Number(f.get("actual"))||0,status:a.status,notes:f.get("notes")});applyActionLifecycle(a,f.get("status"));
   if(standalone)a.pillar=Number(f.get("pillar"));
   save();renderPlan();renderDay();
  });
@@ -1144,46 +1156,61 @@ window.deleteAction=(pid,aid)=>{
  const a=list.find(x=>x.id===aid);
  if(a&&confirm(`Excluir a ação “${a.name}”?`)){if(standalone)data.standaloneActions=list.filter(x=>x.id!==aid);else p.actions=list.filter(x=>x.id!==aid);save();renderPlan();renderDay()}
 };
-let actionPillarFilter="all",actionProjectFilter="all",actionDateFrom="",actionDateTo="";
+let actionPillarFilter="all",actionProjectFilter="all",actionDateFrom="",actionDateTo="",actionStatusFilter="all",actionSearch="";
 function renderActionsTable(){
  const host=document.getElementById("actionsTable");if(!host)return;
  const all=allProjectActions();
  const filtered=all.filter(a=>{
   const date=a.plannedDate||a.start||"";
+  const q=actionSearch.trim().toLocaleLowerCase("pt-BR");
   return (actionPillarFilter==="all"||String(a.pillar)===actionPillarFilter)
    &&(actionProjectFilter==="all"||(actionProjectFilter==="independent"?a.standalone:String(a.projectId)===actionProjectFilter))
+   &&(actionStatusFilter==="all"||(a.status||"Próximas ações")===actionStatusFilter)
    &&(!actionDateFrom||(!!date&&date>=actionDateFrom))
-   &&(!actionDateTo||(!!date&&date<=actionDateTo));
+   &&(!actionDateTo||(!!date&&date<=actionDateTo))
+   &&(!q||[a.name,a.projectName,a.description,pillars[Number(a.pillar)||0]].join(" ").toLocaleLowerCase("pt-BR").includes(q));
  });
- host.innerHTML=`<div class="toolbar" style="gap:12px;flex-wrap:wrap;margin-bottom:12px">
- <div class="field" style="min-width:170px;margin:0"><label>Data inicial</label><input id="actionDateFrom" type="date" value="${actionDateFrom}"></div>
- <div class="field" style="min-width:170px;margin:0"><label>Data final</label><input id="actionDateTo" type="date" value="${actionDateTo}"></div>
- <div class="field" style="min-width:190px;margin:0"><label>Filtrar por pilar</label><select id="actionPillarFilter"><option value="all">Todos os pilares</option>${pillars.map((x,i)=>`<option value="${i}" ${actionPillarFilter===String(i)?"selected":""}>${x}</option>`).join("")}</select></div>
- <div class="field" style="min-width:190px;margin:0"><label>Filtrar por projeto</label><select id="actionProjectFilter"><option value="all">Todos os projetos</option><option value="independent" ${actionProjectFilter==="independent"?"selected":""}>Sem projeto</option>${(data.projects||[]).map(p=>`<option value="${p.id}" ${actionProjectFilter===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}</select></div>
- <button class="btn" id="clearActionFilters">Limpar filtros</button><span class="small muted">${filtered.length} de ${all.length} ações</span></div>`;
+ const countStatus=status=>all.filter(a=>(a.status||"Próximas ações")===status).length;
+ host.innerHTML=`
+ <div class="grid stats" style="margin:0 0 18px">
+  <div class="stat"><span class="label">Total de ações</span><strong>${all.length}</strong></div>
+  <div class="stat"><span class="label">Próximas ações</span><strong>${countStatus("Próximas ações")}</strong></div>
+  <div class="stat"><span class="label">Em execução</span><strong>${countStatus("Em execução")}</strong></div>
+  <div class="stat"><span class="label">Concluídas</span><strong>${countStatus("Concluída")}</strong></div>
+ </div>
+ <div class="card" style="padding:16px;margin-bottom:16px">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"><div><strong>Localizar ações</strong><div class="small muted">Use os filtros para reduzir a lista ao que precisa acompanhar.</div></div><span class="small muted">${filtered.length} de ${all.length} ações</span></div>
+  <div class="toolbar" style="gap:10px;flex-wrap:wrap">
+   <div class="field" style="flex:2;min-width:200px;margin:0"><label>Buscar</label><input id="actionSearch" type="search" placeholder="Nome, projeto ou descrição..." value="${esc(actionSearch)}"></div>
+   <div class="field" style="min-width:160px;margin:0"><label>Status</label><select id="actionStatusFilter"><option value="all">Todos</option>${["Próximas ações","Fila Meu Dia","Em execução","Concluída"].map(x=>`<option value="${x}" ${actionStatusFilter===x?"selected":""}>${x}</option>`).join("")}</select></div>
+   <div class="field" style="min-width:160px;margin:0"><label>Pilar</label><select id="actionPillarFilter"><option value="all">Todos os pilares</option>${pillars.map((x,i)=>`<option value="${i}" ${actionPillarFilter===String(i)?"selected":""}>${x}</option>`).join("")}</select></div>
+   <div class="field" style="min-width:180px;margin:0"><label>Projeto</label><select id="actionProjectFilter"><option value="all">Todos os projetos</option><option value="independent" ${actionProjectFilter==="independent"?"selected":""}>Sem projeto</option>${(data.projects||[]).map(p=>`<option value="${p.id}" ${actionProjectFilter===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}</select></div>
+   <div class="field" style="min-width:145px;margin:0"><label>De</label><input id="actionDateFrom" type="date" value="${actionDateFrom}"></div>
+   <div class="field" style="min-width:145px;margin:0"><label>Até</label><input id="actionDateTo" type="date" value="${actionDateTo}"></div>
+   <button class="btn" id="clearActionFilters" type="button">Limpar filtros</button>
+  </div>
+ </div>`;
  if(!all.length){host.innerHTML+='<div class="board-note">Nenhuma ação cadastrada. Crie uma ação independente ou adicione uma ação dentro de um projeto.</div>';return}
  if(!filtered.length){host.innerHTML+='<div class="board-note">Nenhuma ação encontrada com esses filtros.</div>'}
- else host.innerHTML+=`<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Ação</th><th>Projeto</th><th>Data</th><th>Início</th><th>Término</th><th>Horas planejadas</th><th>Pilar</th><th>Status</th><th></th></tr></thead><tbody>${filtered.map(a=>`<tr>
- <td style="min-width:180px;white-space:normal"><strong>${esc(a.name)}</strong></td><td>${esc(a.projectName)}</td>
+ else host.innerHTML+=`<div class="card" style="padding:0;overflow:hidden"><div style="padding:14px 16px;border-bottom:1px solid var(--line)"><strong>Lista de ações</strong><div class="small muted">Datas de início e conclusão são registradas automaticamente na primeira mudança de status.</div></div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Ação</th><th>Projeto</th><th>Data planejada</th><th>Status</th><th>Iniciada em</th><th>Concluída em</th><th>Prioridade</th><th></th></tr></thead><tbody>${filtered.map(a=>`<tr>
+ <td style="min-width:190px;white-space:normal"><strong>${esc(a.name||"Ação sem título")}</strong><div class="small muted">${esc(a.description||"")}</div></td><td>${esc(a.projectName||"Sem projeto")}</td>
  <td><input aria-label="Data planejada" type="date" value="${a.plannedDate||a.start||""}" onchange="updateActionField('${a.projectId||"independent"}','${a.id}','plannedDate',this.value)" style="min-width:135px"></td>
- <td><input aria-label="Hora de início" type="time" value="${a.startTime||""}" onchange="updateActionField('${a.projectId||"independent"}','${a.id}','startTime',this.value)" style="width:110px"></td>
- <td><input aria-label="Hora de término" type="time" value="${a.endTime||""}" onchange="updateActionField('${a.projectId||"independent"}','${a.id}','endTime',this.value)" style="width:110px"></td>
- <td><input aria-label="Horas planejadas" type="number" min="0" step=".25" value="${a.plannedHours??a.estimate??0}" onchange="updateActionField('${a.projectId||"independent"}','${a.id}','plannedHours',this.value)" style="width:90px"></td>
- <td>${esc(pillars[Number(a.pillar)||0]||"—")}</td>
  <td><select aria-label="Status da ação" onchange="updateActionField('${a.projectId||"independent"}','${a.id}','status',this.value)"><option ${(!a.status||a.status==="Pendente"||a.status==="Próximas ações")?"selected":""}>Próximas ações</option><option ${a.status==="Fila Meu Dia"?"selected":""}>Fila Meu Dia</option><option ${a.status==="Em execução"||a.status==="Em andamento"?"selected":""}>Em execução</option><option ${a.status==="Concluída"?"selected":""}>Concluída</option></select></td>
+ <td>${formatActionDate(a.startedAt)}</td><td>${formatActionDate(a.completedAt)}</td><td>${esc(a.priority||"Média")}</td>
  <td><button class="icon-btn" title="Editar ação" onclick="editAction('${a.projectId||"independent"}','${a.id}')">✎</button><button class="icon-btn" title="Excluir ação" onclick="deleteAction('${a.projectId||"independent"}','${a.id}')">×</button></td>
- </tr>`).join("")}</tbody></table></div>`;
- const pf=document.getElementById("actionPillarFilter"),pr=document.getElementById("actionProjectFilter");
- const df=document.getElementById("actionDateFrom"),dt=document.getElementById("actionDateTo");
- pf.onchange=e=>{actionPillarFilter=e.target.value;renderActionsTable()};
- pr.onchange=e=>{actionProjectFilter=e.target.value;renderActionsTable()};
- df.onchange=e=>{actionDateFrom=e.target.value;renderActionsTable()};
- dt.onchange=e=>{actionDateTo=e.target.value;renderActionsTable()};
- document.getElementById("clearActionFilters").onclick=()=>{actionDateFrom="";actionDateTo="";actionPillarFilter="all";actionProjectFilter="all";renderActionsTable()};
+ </tr>`).join("")}</tbody></table></div></div>`;
+ const bind=(id,fn)=>{const el=document.getElementById(id);if(el)el.onchange=fn};
+ bind("actionSearch",e=>{actionSearch=e.target.value;renderActionsTable()});
+ bind("actionStatusFilter",e=>{actionStatusFilter=e.target.value;renderActionsTable()});
+ bind("actionPillarFilter",e=>{actionPillarFilter=e.target.value;renderActionsTable()});
+ bind("actionProjectFilter",e=>{actionProjectFilter=e.target.value;renderActionsTable()});
+ bind("actionDateFrom",e=>{actionDateFrom=e.target.value;renderActionsTable()});
+ bind("actionDateTo",e=>{actionDateTo=e.target.value;renderActionsTable()});
+ const clear=document.getElementById("clearActionFilters");if(clear)clear.onclick=()=>{actionDateFrom="";actionDateTo="";actionPillarFilter="all";actionProjectFilter="all";actionStatusFilter="all";actionSearch="";renderActionsTable()};
 }
 window.updateActionField=(pid,aid,key,value)=>{
  const standalone=!pid||pid==="independent",p=standalone?null:data.projects.find(x=>x.id===pid),a=standalone?(data.standaloneActions||[]).find(x=>x.id===aid):p?.actions.find(x=>x.id===aid);if(!a)return;
- if(key==="plannedHours"){a.plannedHours=Math.max(0,Number(value)||0);a.estimate=a.plannedHours}else if(key==="pillar"&&standalone)a.pillar=Number(value);else if(key==="status"){a.status=value;if(value==="Concluída")a.completedAt=new Date().toISOString();else delete a.completedAt}else a[key]=value;
+ if(key==="plannedHours"){a.plannedHours=Math.max(0,Number(value)||0);a.estimate=a.plannedHours}else if(key==="pillar"&&standalone)a.pillar=Number(value);else if(key==="status"){applyActionLifecycle(a,value)}else a[key]=value;
  if(a.startTime&&a.endTime&&timeToMinutes(a.endTime)<=timeToMinutes(a.startTime)){alert("A hora de término deve ser posterior à hora de início.");a.endTime="";save();renderActionsTable();return}
  save();renderProjects();renderActionsTable();renderDay();
 };

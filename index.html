@@ -512,6 +512,7 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
 @media(max-width:760px){.projects-workspace{grid-template-columns:1fr;gap:12px}.projects-pillar-sidebar{position:static;display:flex;overflow-x:auto;gap:5px;padding:6px}.projects-pillar-tab{flex:0 0 auto;width:auto;white-space:nowrap}.projects-pillar-tab>span{white-space:nowrap}.projects-pillar-tab b{display:none}.projects-card-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}}
 @media(max-width:520px){.projects-card-grid{grid-template-columns:1fr}}
 
+.project-overview-card[role=button]{cursor:pointer}.project-overview-card[role=button]:hover{transform:translateY(-2px);border-color:#AFC1D3;box-shadow:0 8px 22px rgba(23,43,77,.09)}
 </style>
 </head>
 <body>
@@ -1071,6 +1072,7 @@ function setPlanTab(tab){activePlanTab=tab;document.querySelectorAll("[data-plan
 document.querySelectorAll("[data-plan-tab]").forEach(b=>b.addEventListener("click",()=>setPlanTab(b.dataset.planTab)));
 function renderPlan(){renderProjects();renderActionsTable()}
 let projectPillarFilter="all";
+window.openProjectActions=function(id){actionProjectFilter=String(id);const nav=document.querySelector('#nav button[data-page="actions"]');if(nav)nav.click();renderActionsTable();};
 function renderProjects(){
  const ps=data.projects||[],host=document.getElementById("projectsTable"),tabs=document.getElementById("projectsPillarTabs");
  if(!host||!tabs)return;
@@ -1083,7 +1085,7 @@ function renderProjects(){
  if(!filtered.length){host.innerHTML='<div class="board-note">Nenhum projeto cadastrado neste pilar. Você pode criar um projeto usando o botão acima.</div>';return}
  host.innerHTML='<div class="projects-results-head"><span>'+filtered.length+' '+(filtered.length===1?"projeto":"projetos")+'</span><span>'+ (projectPillarFilter==="all"?"Todos os pilares":esc(pillars[Number(projectPillarFilter)]))+'</span></div><div class="projects-card-grid">'+filtered.map(p=>{
   const acts=p.actions||[],done=acts.filter(a=>a.status==="Concluída").length,pct=acts.length?Math.round(done/acts.length*100):0,pi=Number(p.pillar)||0;
-  return '<article class="project-overview-card"><div class="project-overview-top"><span class="project-pillar-mark" style="--pillar-color:'+colors[pi]+'">'+icons[pi]+'</span><span class="project-status">'+esc(p.status||"Não iniciado")+'</span></div><h3>'+esc(p.name)+'</h3><p>'+esc(p.description||"Sem descrição cadastrada.")+'</p><div class="project-overview-meta"><span>'+esc(p.priority||"Prioridade não definida")+'</span><span>'+acts.length+' ações</span></div><div class="project-progress-track"><span style="width:'+pct+'%"></span></div><div class="project-overview-footer"><span>'+pct+'% concluído · '+done+'/'+acts.length+' ações</span><div><button type="button" class="icon-btn" title="Editar projeto" onclick="editProject(\''+p.id+'\')">✎</button><button type="button" class="icon-btn" title="Excluir projeto" onclick="deleteProject(\''+p.id+'\')">×</button></div></div></article>';
+  return '<article class="project-overview-card" role="button" tabindex="0" aria-label="Abrir atividades do projeto" onclick="openProjectActions('${p.id}')"><div class="project-overview-top"><span class="project-pillar-mark" style="--pillar-color:'+colors[pi]+'">'+icons[pi]+'</span><span class="project-status">'+esc(p.status||"Não iniciado")+'</span></div><h3>'+esc(p.name)+'</h3><p>'+esc(p.description||"Sem descrição cadastrada.")+'</p><div class="project-overview-meta"><span>'+esc(p.priority||"Prioridade não definida")+'</span><span>'+acts.length+' ações</span></div><div class="project-progress-track"><span style="width:'+pct+'%"></span></div><div class="project-overview-footer"><span>'+pct+'% concluído · '+done+'/'+acts.length+' ações</span><div><button type="button" class="icon-btn" title="Editar projeto" onclick="editProject(\''+p.id+'\')">✎</button><button type="button" class="icon-btn" title="Excluir projeto" onclick="deleteProject(\''+p.id+'\')">×</button></div></div></article>';
  }).join("")+'</div>';
 }
 window.toggleProjectActions=id=>{const row=document.getElementById("actions-row-"+id),btn=document.getElementById("expand-"+id);if(!row||!btn)return;const opening=row.style.display==="none";row.style.display=opening?"table-row":"none";btn.setAttribute("aria-expanded",String(opening));btn.textContent=opening?"⌃":"⌄";btn.title=opening?"Recolher ações":"Expandir ações"};

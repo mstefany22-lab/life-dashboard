@@ -889,7 +889,8 @@ function renderDay(){
    '<div class="day-fixed-main"><strong>'+esc(a.name)+'</strong><div class="meta">'+esc(meta)+'</div></div>'+
    '<div class="day-fixed-controls"><label class="day-fixed-real"><span>Real</span><input type="number" min="0" step="0.25" value="'+(actualValue?String(actualValue).replace(".",","):"0")+'" aria-label="Horas realizadas para '+esc(a.name)+'" onchange="setFixedActual(\''+kind+'\',\''+id+'\',this.value)"><span>h</span></label>'+
    '<label class="day-fixed-check"><input type="checkbox" '+(done?"checked":"")+' onchange="setFixedDone(\''+kind+'\',\''+id+'\',\''+d+'\',this.checked)"><span>Concluída</span></label>'+
-   (data.checklists||[]).some(x=>String(x.id)===String(a.checklist)||String(x.name)===String(a.checklist))?'<button type="button" class="day-fixed-edit" onclick="openActivityChecklist(\\''+kind+'\\',\\''+id+'\\',\\''+d+'\\')">Checklist</button>':'')+\n   '<button type="button" class="day-fixed-edit" onclick="'+edit+'">Editar</button>'+
+   (data.checklists||[]).some(x=>String(x.id)===String(a.checklist)||String(x.name)===String(a.checklist))?'<button type="button" class="day-fixed-edit" onclick="openActivityChecklist(\\''+kind+'\\',\\''+id+'\\',\\''+d+'\\')">Checklist</button>':'')+
+   '<button type="button" class="day-fixed-edit" onclick="'+edit+'">Editar</button>'+
    '</div></article>';
  }
  host.innerHTML=fixed.length?fixed.map(card).join(""):'<div class="board-note">Nenhum compromisso para esta data. Cadastre um compromisso ou configure uma recorrência.</div>';

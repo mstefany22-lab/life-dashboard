@@ -1072,7 +1072,17 @@ function setPlanTab(tab){activePlanTab=tab;document.querySelectorAll("[data-plan
 document.querySelectorAll("[data-plan-tab]").forEach(b=>b.addEventListener("click",()=>setPlanTab(b.dataset.planTab)));
 function renderPlan(){renderProjects();renderActionsTable()}
 let projectPillarFilter="all";
-window.openProjectActions=function(id){actionProjectFilter=String(id);const nav=document.querySelector('#nav button[data-page="actions"]');if(nav)nav.click();renderActionsTable();};
+window.openProjectActions=function(id){
+ const project=(data.projects||[]).find(p=>String(p.id)===String(id));if(!project)return;
+ const actions=project.actions||[];
+ const rows=actions.length?actions.map(a=>'<div style="display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)"><div style="flex:1;min-width:0"><div style="font-weight:650;color:var(--text)">'+esc(a.name||"Ação sem título")+'</div><div class="small muted" style="margin-top:5px">'+esc(a.status||"Próximas ações")+' · '+esc(a.priority||"Prioridade não definida")+' · '+(a.plannedDate?fmtDate(a.plannedDate):"Sem data")+'</div>'+(a.description?'<div class="small muted" style="margin-top:5px">'+esc(a.description)+'</div>':'')+'</div><div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="icon-btn" title="Editar ação" onclick="editAction(\''+project.id+'\',\''+a.id+'\')">✎</button><button type="button" class="icon-btn" title="Excluir ação" onclick="deleteProjectPopupAction(\''+project.id+'\',\''+a.id+'\')">×</button></div></div>').join(""):'<div class="board-note" style="margin:12px 0">Este projeto ainda não possui ações cadastradas.</div>';
+ openModal("Ações do projeto",'<div style="margin-bottom:12px"><div style="font-weight:700;font-size:16px">'+esc(project.name)+'</div><div class="small muted">'+actions.length+' '+(actions.length===1?"ação cadastrada":"ações cadastradas")+'</div></div><div style="max-height:55vh;overflow:auto;padding-right:4px">'+rows+'</div>');
+};
+window.deleteProjectPopupAction=function(pid,aid){
+ const p=(data.projects||[]).find(x=>String(x.id)===String(pid));if(!p)return;
+ const a=(p.actions||[]).find(x=>String(x.id)===String(aid));if(!a||!confirm('Excluir a ação “'+a.name+'”?'))return;
+ p.actions=p.actions.filter(x=>String(x.id)!==String(aid));save();renderProjects();openProjectActions(pid);
+};
 function renderProjects(){
  const ps=data.projects||[],host=document.getElementById("projectsTable"),tabs=document.getElementById("projectsPillarTabs");
  if(!host||!tabs)return;

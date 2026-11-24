@@ -246,6 +246,24 @@ textarea.journal{min-height:120px}
 @media(max-width:1100px){.exercise-board{grid-template-columns:repeat(4,minmax(155px,1fr))}}
 @media(max-width:650px){.exercise-board{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.exercise-day{min-height:180px}.exercise-day-head{padding:9px 8px}.exercise-day-list{padding:6px}.exercise-card{padding:8px}.exercise-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+
+.day-fixed-list{display:grid;gap:8px;margin-bottom:24px}
+.day-fixed-card{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1px solid var(--line);border-left:5px solid var(--fixed-color,#8aa0b8);border-radius:12px;min-width:0}
+.day-fixed-main{flex:1;min-width:0}.day-fixed-main strong{display:block;font-size:13px;overflow-wrap:anywhere}.day-fixed-main .meta,.project-task-card .meta,.day-history-card .meta{font-size:11px;color:var(--muted);margin-top:3px}
+.day-fixed-status{font-size:10px;color:#687789;background:#f0f3f6;border-radius:20px;padding:4px 8px;white-space:nowrap}
+.day-fixed-card.done .day-fixed-main strong{text-decoration:line-through;color:var(--muted)}.day-fixed-card.done{opacity:.72}
+.day-fixed-actions,.project-task-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.day-fixed-actions button,.project-task-actions button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 9px;color:#53657a;font-size:11px}
+.project-kanban{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.project-kanban-column{background:#f5f7fa;border:1px solid var(--line);border-radius:14px;padding:13px;min-width:0}
+.project-kanban-column>header{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 11px;margin-bottom:10px;border-bottom:1px solid var(--line)}
+.project-kanban-column>header strong{font-size:13px}.project-kanban-column>header span{font-size:11px;background:#fff;border-radius:20px;padding:3px 8px;color:var(--muted)}
+.project-kanban-cards{display:grid;gap:8px;min-height:100px;align-content:start}
+.project-task-card{background:#fff;border:1px solid var(--line);border-left:5px solid var(--task-color,#dce8f5);border-radius:11px;padding:11px;display:grid;gap:9px;min-width:0}
+.project-task-main strong{font-size:13px;overflow-wrap:anywhere}.project-task-main p{font-size:11px;color:var(--muted);margin:6px 0 0}
+.project-task-actions button.complete{background:#e5efe8;border-color:#d2e3d8;color:#3f7553}
+.day-history-list{display:grid;gap:8px}.day-history-card{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:#fff;border:1px solid var(--line);border-radius:12px}.day-history-card>div:first-child{min-width:0}.day-history-card strong{font-size:13px}
+@media(max-width:760px){.project-kanban{grid-template-columns:1fr}.day-fixed-card{align-items:flex-start;flex-wrap:wrap}.day-fixed-status{margin-left:auto}.day-fixed-actions{width:100%;justify-content:flex-end}.day-history-card{align-items:flex-start;flex-direction:column}.day-history-card .toolbar{width:100%;justify-content:flex-end}}
+
 </style>
 </head>
 <body>
@@ -282,8 +300,9 @@ textarea.journal{min-height:120px}
   <section class="page active" id="day">
     <p class="intro">Planeje seu tempo com intenção e acompanhe o que realmente aconteceu.</p>
     <div class="day-tabs" role="tablist" aria-label="Meu Dia">
-      <button type="button" class="day-tab active" data-day-tab="agenda" role="tab" aria-selected="true">▦ Agenda do Dia</button>
+      <button type="button" class="day-tab active" data-day-tab="agenda" role="tab" aria-selected="true">▦ Meu dia</button>
       <button type="button" class="day-tab" data-day-tab="recurring" role="tab" aria-selected="false">↻ Recorrências <span id="recurringTabCount" class="day-tab-count">0</span></button>
+      <button type="button" class="day-tab" data-day-tab="history" role="tab" aria-selected="false">✓ Histórico <span id="dayHistoryCount" class="day-tab-count">0</span></button>
     </div>
     <div id="dayAgendaPanel">
     <div class="grid stats">
@@ -292,10 +311,10 @@ textarea.journal{min-height:120px}
       <div class="stat"><span class="label">Execução do dia</span><strong id="execution">0%</strong><small>Atividades concluídas / total</small></div>
       <div class="stat"><span class="label">Atividades concluídas</span><strong id="doneCount">0</strong><small id="doneCountDetail">de 0 atividades planejadas</small></div>
     </div>
-    <section id="dayUnscheduledSection" class="card" style="padding:16px;margin-top:14px;display:none">
-      <div class="section-head"><h2>Atividades sem horário</h2><span class="small muted">Planejadas para este dia</span></div>
-      <div id="dayUnscheduledList"></div>
-    </section>
+    <div class="section-head"><div><h2>Atividades fixas</h2><span class="small muted">Rotina, compromissos e atividades com data definida</span></div><div class="toolbar"><input id="dayDate" type="date" style="width:auto"><button class="btn primary" id="addActivity">＋ Atividade fixa</button></div></div>
+    <div id="dayFixedActivities" class="day-fixed-list"></div>
+    <div class="section-head"><div><h2>Atividades de projetos</h2><span class="small muted">Tarefas sem dia definido · organize conforme sua disponibilidade</span></div></div>
+    <div id="dayActionKanban" class="project-kanban"></div>
     <section class="card" id="dayBrainDumpCard" style="padding:16px;margin:18px 0">
       <div class="section-head" style="margin:0 0 10px"><div><h2>Brain Dump</h2><span class="small muted">Capture ideias, lembretes e tarefas ao longo do dia</span></div><span class="small muted" id="dayBrainDumpCount">0 itens</span></div>
       <div style="display:flex;gap:8px;align-items:flex-start;margin:10px 0">
@@ -304,8 +323,6 @@ textarea.journal{min-height:120px}
       </div>
       <div id="dayBrainDumpList"></div>
     </section>
-    <div class="section-head"><h2>Agenda</h2><div class="toolbar"><input id="dayDate" type="date" style="width:auto"><button class="btn primary" id="addActivity">＋ Atividade</button></div></div>
-    <div id="dayAgenda" class="agenda"></div>
     </div>
     <section id="dayRecurringPanel" style="display:none">
       <div class="section-head"><div><h2>Atividades recorrentes</h2><p class="small muted" style="margin:4px 0 0">Consulte e gerencie todas as recorrências cadastradas.</p></div><span id="recurringCountLabel" class="small muted"></span></div>
@@ -316,6 +333,10 @@ textarea.journal{min-height:120px}
         <select id="recurringStatusFilter" aria-label="Filtrar por situação"><option value="">Todas as situações</option><option value="active">Ativas</option><option value="scheduled">Programadas</option><option value="ended">Encerradas</option></select>
       </div>
       <div id="recurringList" class="list"></div>
+    </section>
+    <section id="dayHistoryPanel" style="display:none">
+      <div class="section-head"><div><h2>Histórico de atividades concluídas</h2><p class="small muted" style="margin:4px 0 0">As atividades concluídas saem automaticamente do Kanban e ficam registradas aqui.</p></div><span id="historyCountLabel" class="small muted"></span></div>
+      <div id="dayActionHistory" class="day-history-list"></div>
     </section>
   </section>
 
@@ -536,39 +557,45 @@ function renderDayExercises(date){
   </div>`;
  }).join(""):'<div class="small muted" style="padding:10px 2px">Nenhum exercício programado para esta data. Cadastre ou ajuste os dias na aba Exercícios.</div>';
 }
-function renderDay(){
-let d=document.getElementById("dayDate").value||today, dateObj=new Date(d+"T12:00:00");
-renderDayBrainDump(d);
-let recurring=data.recurringTasks.filter(t=>{if(d<t.startDate||(t.until&&d>t.until)||(t.excludedDates||[]).includes(d))return false;let st=new Date(t.startDate+"T12:00:00");return t.frequency==="daily"||(t.frequency==="weekly"&&(t.days?.length?t.days.includes(dateObj.getDay()):dateObj.getDay()===st.getDay()))||(t.frequency==="monthly"&&dateObj.getDate()===st.getDate())}).map(t=>({...t,id:"rec-"+t.id+"-"+d,date:d,recurringId:t.id,status:(t.completedDates||[]).includes(d)?"Concluída":"Pendente"}));
-const plannedDayActions=allProjectActions().filter(a=>(a.plannedDate||a.start)===d&&a.status!=="Cancelada").map(a=>({...a,id:"planned-action-"+a.id,date:d,start:a.startTime||"",end:a.endTime||"",pillar:Number(a.pillar)||0,status:a.status==="Concluída"?"Concluída":"Pendente",projectAction:true,projectId:a.projectId,actionId:a.id,actual:Number(a.actual)||0}));
-let projectDayActions=plannedDayActions.filter(a=>a.start&&a.end);
-let unscheduledActions=plannedDayActions.filter(a=>!a.start||!a.end);
-let arr=[...data.activities.filter(a=>a.date===d),...recurring,...projectDayActions].sort((a,b)=>a.start.localeCompare(b.start)||a.end.localeCompare(b.end)),host=document.getElementById("dayAgenda");
-const toMinutes=t=>{let [h,m]=t.split(":").map(Number);return h*60+m},fmt=n=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");
-const dayExercises=(data.exerciseActivities||[]).filter(a=>(a.days||[]).includes(dateObj.getDay()));
-const periods=[
- {key:"morning",label:"Manhã",range:"05h30 – 13h",start:330,end:780,items:arr.filter(a=>a.start<"13:00")},
- {key:"afternoon",label:"Tarde",range:"13h – 18h30",start:780,end:1110,items:arr.filter(a=>a.start>="13:00"&&a.start<"18:30")},
- {key:"night",label:"Noite",range:"18h30 – 23h",start:1110,end:1380,items:arr.filter(a=>a.start>="18:30")}
-].map(period=>({...period,exerciseItems:dayExercises.filter(a=>{
- const periodKey=a.start?(a.start<"13:00"?"morning":a.start<"18:30"?"afternoon":"night"):(a.period||"night");
- return periodKey===period.key;
- })}));
-const toClock=n=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");
-const borderColors=["#D1AE4D","#B86F75","#8D78B5","#648D73","#6487B2","#B77D9A","#B98645","#5B999A"];
-host.className="day-kanban";host.style.gridTemplateColumns="";host.style.gridAutoRows="";
-host.innerHTML=periods.map(period=>{
- const slots=[];for(let minute=period.start;minute<period.end;minute+=30){const slotEnd=Math.min(minute+30,period.end);const items=period.items.filter(a=>{const [h,m]=a.start.split(":").map(Number),value=h*60+m;return value>=minute&&value<slotEnd});const exerciseItems=period.exerciseItems.filter(a=>{if(!a.start)return false;const [h,m]=a.start.split(":").map(Number),value=h*60+m;return value>=minute&&value<slotEnd});slots.push({minute,items,exerciseItems})}
- const renderExerciseCard=a=>{const checked=(a.completedDates||[]).includes(d);const time=a.start&&a.end?a.start+"–"+a.end+" · ":"";return `<article class="day-kanban-card ${checked?"done":""}" style="background:#e4edf7;border-left-color:#6487B2"><div class="day-kanban-card-main"><strong>${esc(a.name)}</strong><div class="meta">${time}${esc(a.category||"Exercício")} · ${Number(a.minutes)||30} min · Exercício recorrente</div><div class="day-kanban-status">${checked?"Concluído":"Pendente"}</div></div><div class="activity-actions"><button type="button" title="${checked?"Reabrir exercício":"Concluir exercício"}" onclick="toggleExercise('${a.id}','${d}',${!checked})">${checked?"↶":"✓"}</button>${a.checklist?`<button type="button" title="Abrir checklist" onclick="openExerciseChecklist('${a.id}','${d}')">☑</button>`:""}<button type="button" title="Editar exercício" onclick="editExercise('${a.id}')">✎</button></div></article>`};
- const exerciseCards=period.exerciseItems.filter(a=>!a.start).map(renderExerciseCard).join("");
- return `<section class="day-kanban-column ${period.key}"><div class="day-kanban-head"><div><strong>${period.label}</strong><span>${period.range}</span></div><span class="day-kanban-count">${period.items.length+period.exerciseItems.length}</span></div><div class="day-kanban-list">${exerciseCards}${slots.map(slot=>`<div class="day-kanban-hour"><div class="day-kanban-hour-label">${toClock(slot.minute)}</div><div class="day-kanban-hour-content">${slot.exerciseItems.map(renderExerciseCard).join("")}${(slot.items.length||slot.exerciseItems.length)?slot.items.map(a=>{const color=borderColors[a.pillar]||"#7C8998";return `<article class="day-kanban-card ${a.status==="Concluída"?"done":""}" style="background:${colors[a.pillar]};border-left-color:${color}"><div class="day-kanban-card-main"><strong>${esc(a.name)}</strong><div class="meta">${esc(a.start)}–${esc(a.end)} · ${pillars[a.pillar]} · ${duration(a).toFixed(2).replace(".",",")}h</div><div class="day-kanban-status">${esc(a.status)}${a.recurringId?" · ↻ Recorrente":""}</div></div><div class="activity-actions">${a.projectAction?`<button title="Editar ação do projeto" onclick="editAction('${a.projectId}','${a.actionId}')">✎</button><button title="${a.status==="Concluída"?"Reabrir ação":"Concluir ação"}" onclick="toggleProjectActionStatus('${a.projectId}','${a.actionId}')">${a.status==="Concluída"?"↶":"✓"}</button>`:`<button type="button" title="Editar atividade" onclick="window.editActivity('${a.id}')">✎</button><button type="button" title="${a.status==="Concluída"?"Reabrir atividade":"Concluir atividade"}" onclick="window.toggleActivityStatus('${a.id}')">${a.status==="Concluída"?"↶":"✓"}</button>${a.checklist?`<button type="button" title="Abrir checklist" onclick="window.openActivityChecklist('${a.id}')">☑</button>`:""}<button type="button" title="Excluir atividade" onclick="window.deleteActivity('${a.id}')">×</button>`}</div></article>`}).join(""):`<div class="day-kanban-hour-empty">Livre</div>`}</div></div>`).join("")}</div><button class="day-kanban-add" onclick="addActivity('${toClock(period.start)}')">＋ Atividade</button></section>`;
-}).join("");let planned=arr.reduce((sum,a)=>sum+duration(a),0),actual=arr.reduce((sum,a)=>sum+(+a.actual||0),0),done=arr.filter(a=>a.status==="Concluída").length;
-document.getElementById("plannedHours").textContent=planned.toFixed(1).replace(".",",")+"h";document.getElementById("actualHours").textContent=actual.toFixed(1).replace(".",",")+"h";document.getElementById("execution").textContent=(arr.length?Math.round(done/arr.length*100):0)+"%";document.getElementById("doneCount").textContent=done;document.getElementById("doneCountDetail").textContent=`de ${arr.length} atividades planejadas`;
-const unscheduledSection=document.getElementById("dayUnscheduledSection"),unscheduledHost=document.getElementById("dayUnscheduledList");
-unscheduledSection.style.display=unscheduledActions.length?"block":"none";
-unscheduledHost.innerHTML=unscheduledActions.map(a=>`<div class="row-item" style="background:${colors[a.pillar]};border-radius:10px;padding:10px;margin:7px 0"><div style="min-width:0;flex:1"><strong>${esc(a.name)}</strong><div class="small muted">${esc(a.projectName||"Sem projeto")} · ${pillars[a.pillar]} · ${Number(a.plannedHours||0).toLocaleString("pt-BR")}h planejadas · ${esc(a.status)}</div></div><div class="toolbar"><button class="icon-btn" title="Editar ação" onclick="editAction('${a.projectId||"independent"}','${a.actionId}')">✎</button><button class="icon-btn" title="${a.status==="Concluída"?"Reabrir ação":"Concluir ação"}" onclick="toggleProjectActionStatus('${a.projectId||"independent"}','${a.actionId}')">${a.status==="Concluída"?"↶":"✓"}</button></div></div>`).join("");
 
+function projectActionSource(pid,aid){const standalone=!pid||pid==="independent",p=standalone?null:data.projects.find(x=>x.id===pid);return standalone?(data.standaloneActions||[]).find(x=>x.id===aid):p?.actions.find(x=>x.id===aid)}
+function setProjectActionStatus(pid,aid,status){const a=projectActionSource(pid,aid);if(!a)return;a.status=status;if(status==="Concluída")a.completedAt=new Date().toISOString();else delete a.completedAt;save();renderDay();renderPlan();renderDayHistory()}
+window.setProjectActionStatus=setProjectActionStatus;
+function renderProjectActionKanban(){
+ const host=document.getElementById("dayActionKanban");if(!host)return;
+ const tasks=allProjectActions().filter(a=>!(a.plannedDate||a.start)&&a.status!=="Concluída"&&a.status!=="Cancelada");
+ const pending=tasks.filter(a=>a.status!=="Em andamento"),progress=tasks.filter(a=>a.status==="Em andamento");
+ function card(a){const pid=a.projectId||"independent",pidx=Number(a.pillar)||0,meta=[a.projectName||"Sem projeto",pillars[pidx]||"Sem pilar",a.priority||"Média",Number(a.plannedHours??a.estimate??0).toLocaleString("pt-BR")+"h planejadas"].join(" · "),move=a.status==="Em andamento"?"Pendente":"Em andamento",label=a.status==="Em andamento"?"Voltar à fila":"Iniciar";return '<article class="project-task-card" style="--task-color:'+(colors[pidx]||"#dce8f5")+'"><div class="project-task-main"><strong>'+esc(a.name)+'</strong><div class="meta">'+esc(meta)+'</div>'+(a.description?'<p>'+esc(a.description)+'</p>':'')+'</div><div class="project-task-actions"><button type="button" onclick="setProjectActionStatus(\''+pid+'\',\''+a.id+'\',\''+move+'\')">'+label+'</button><button type="button" onclick="editAction(\''+pid+'\',\''+a.id+'\')">Editar</button><button type="button" class="complete" onclick="setProjectActionStatus(\''+pid+'\',\''+a.id+'\',\'Concluída\')">✓ Concluir</button></div></article>'}
+ function col(title,items){return '<section class="project-kanban-column"><header><strong>'+title+'</strong><span>'+items.length+'</span></header><div class="project-kanban-cards">'+(items.length?items.map(card).join(""):'<div class="day-kanban-empty">Nenhuma atividade nesta coluna.</div>')+'</div></section>'}
+ host.innerHTML=col("Fila",pending)+col("Em execução",progress)
 }
+function renderDayHistory(){
+ const host=document.getElementById("dayActionHistory");if(!host)return;
+ const done=allProjectActions().filter(a=>a.status==="Concluída").sort((a,b)=>(b.completedAt||"").localeCompare(a.completedAt||""));
+ const count=document.getElementById("dayHistoryCount"),label=document.getElementById("historyCountLabel");if(count)count.textContent=done.length;if(label)label.textContent=done.length+" concluída(s)";
+ host.innerHTML=done.length?done.map(a=>{const pid=a.projectId||"independent",date=a.completedAt?new Date(a.completedAt).toLocaleString("pt-BR"):"Conclusão anterior ao histórico";return '<article class="day-history-card"><div><strong>'+esc(a.name)+'</strong><div class="meta">'+esc(a.projectName||"Sem projeto")+' · '+esc(pillars[Number(a.pillar)||0]||"Sem pilar")+' · '+esc(date)+'</div></div><div class="toolbar"><button class="btn" type="button" onclick="editAction(\''+pid+'\',\''+a.id+'\')">Detalhes</button><button class="btn" type="button" onclick="setProjectActionStatus(\''+pid+'\',\''+a.id+'\',\'Pendente\')">Reabrir</button></div></article>'}).join(""):'<div class="board-note">Ainda não há atividades concluídas no histórico.</div>'
+}
+function renderDay(){
+ const d=document.getElementById("dayDate").value||today,dateObj=new Date(d+"T12:00:00");renderDayBrainDump(d);
+ const recurring=data.recurringTasks.filter(t=>{if(d<t.startDate||(t.until&&d>t.until)||(t.excludedDates||[]).includes(d))return false;const st=new Date(t.startDate+"T12:00:00");return t.frequency==="daily"||(t.frequency==="weekly"&&(t.days?.length?t.days.includes(dateObj.getDay()):dateObj.getDay()===st.getDay()))||(t.frequency==="monthly"&&dateObj.getDate()===st.getDate())}).map(t=>({...t,id:"rec-"+t.id+"-"+d,date:d,recurringId:t.id,status:(t.completedDates||[]).includes(d)?"Concluída":"Pendente",kind:"recurring"}));
+ const personal=data.activities.filter(a=>a.date===d).map(a=>({...a,kind:"personal"}));
+ const projectFixed=allProjectActions().filter(a=>(a.plannedDate||a.start)===d&&a.status!=="Cancelada").map(a=>({...a,kind:"project",actionId:a.id,projectId:a.projectId||"independent",pillar:Number(a.pillar)||0}));
+ const exerciseFixed=(data.exerciseActivities||[]).filter(a=>(a.days||[]).includes(dateObj.getDay())).map(a=>({...a,kind:"exercise",status:(a.completedDates||[]).includes(d)?"Concluída":"Pendente"}));
+ const fixed=[...personal,...recurring,...projectFixed,...exerciseFixed].sort((a,b)=>(a.start||a.startTime||"").localeCompare(b.start||b.startTime||""));
+ const host=document.getElementById("dayFixedActivities");
+ function card(name,meta,status,actions,color){return '<article class="day-fixed-card '+(status==="Concluída"?"done":"")+'" style="--fixed-color:'+color+'"><div class="day-fixed-main"><strong>'+esc(name)+'</strong><div class="meta">'+esc(meta)+'</div></div><span class="day-fixed-status">'+esc(status||"Pendente")+'</span><div class="day-fixed-actions">'+actions+'</div></article>'}
+ host.innerHTML=fixed.length?fixed.map(a=>{
+  const pidx=Number(a.pillar)||0,when=a.start&&a.end?a.start+"–"+a.end+" · ":a.startTime&&a.endTime?a.startTime+"–"+a.endTime+" · ":"";
+  if(a.kind==="exercise"){const done=a.status==="Concluída";return card(a.name,when+(a.category||"Exercício")+" · "+(Number(a.minutes)||30)+" min",a.status,'<button type="button" onclick="toggleExercise(\''+a.id+'\',\''+d+'\','+(!done)+')">'+(done?"↶":"✓")+'</button><button type="button" onclick="editExercise(\''+a.id+'\')">Editar</button>',"#6487B2")}
+  if(a.kind==="project"){const done=a.status==="Concluída";return card(a.name,when+(a.projectName||"Sem projeto")+" · "+(pillars[pidx]||"Sem pilar")+" · "+Number(a.plannedHours??a.estimate??0).toLocaleString("pt-BR")+"h",a.status,'<button type="button" onclick="editAction(\''+(a.projectId||"independent")+'\',\''+a.actionId+'\')">Editar</button><button type="button" onclick="toggleProjectActionStatus(\''+(a.projectId||"independent")+'\',\''+a.actionId+'\')">'+(done?"↶":"✓")+'</button>',colors[pidx]||"#dce8f5")}
+  if(a.kind==="recurring"){const done=a.status==="Concluída";return card(a.name,when+(pillars[pidx]||"Sem pilar")+" · Recorrente",a.status,'<button type="button" onclick="window.editActivity(\''+a.id+'\')">Editar</button><button type="button" onclick="window.toggleActivityStatus(\''+a.id+'\')">'+(done?"↶":"✓")+'</button>',colors[pidx]||"#dce8f5")}
+  const done=a.status==="Concluída";return card(a.name,when+(pillars[pidx]||"Sem pilar")+(a.end&&a.start?" · "+duration(a).toFixed(2).replace(".",",")+"h":""),a.status||"Pendente",'<button type="button" onclick="window.editActivity(\''+a.id+'\')">Editar</button><button type="button" onclick="window.toggleActivityStatus(\''+a.id+'\')">'+(done?"↶":"✓")+'</button>',colors[pidx]||"#dce8f5")
+ }).join(""):'<div class="board-note">Nenhuma atividade fixa para esta data. Cadastre uma atividade ou configure uma recorrência.</div>';
+ const planned=fixed.reduce((sum,a)=>sum+(a.kind==="exercise"?(Number(a.minutes)||0)/60:a.kind==="project"?Number(a.plannedHours??a.estimate??0):duration(a)),0),actual=fixed.reduce((sum,a)=>sum+(a.kind==="exercise"?(a.status==="Concluída"?(Number(a.minutes)||0)/60:0):Number(a.actual)||0),0),done=fixed.filter(a=>a.status==="Concluída").length;
+ document.getElementById("plannedHours").textContent=planned.toFixed(1).replace(".",",")+"h";document.getElementById("actualHours").textContent=actual.toFixed(1).replace(".",",")+"h";document.getElementById("execution").textContent=(fixed.length?Math.round(done/fixed.length*100):0)+"%";document.getElementById("doneCount").textContent=done;document.getElementById("doneCountDetail").textContent="de "+fixed.length+" atividades fixas";
+ renderProjectActionKanban();renderDayHistory()
+}
+
 window.editActivity=id=>{
  let recurring=id.startsWith("rec-"), date="", target;
  if(recurring){const match=String(id).match(/^rec-(.+)-(\d{4}-\d{2}-\d{2})$/);if(!match)return;date=match[2];const rid=match[1];target=data.recurringTasks.find(x=>x.id===rid)}
@@ -586,7 +613,7 @@ window.editActivity=id=>{
  if(isSeries){form.elements.repeat.value=a.frequency||"weekly";form.elements.until.value=a.until||"";document.getElementById("editDays").style.display=form.elements.repeat.value==="weekly"?"block":"none";form.elements.repeat.onchange=e=>document.getElementById("editDays").style.display=e.target.value==="weekly"?"block":"none"}
 };
 window.toggleActivityStatus=id=>{if(String(id).startsWith("rec-")){const match=String(id).match(/^rec-(.+)-(\d{4}-\d{2}-\d{2})$/);if(!match)return;const rid=match[1],date=match[2],t=data.recurringTasks.find(x=>x.id===rid);if(!t)return;t.completedDates=t.completedDates||[];t.completedDates=t.completedDates.includes(date)?t.completedDates.filter(x=>x!==date):[...t.completedDates,date]}else{let a=data.activities.find(x=>x.id===id);if(!a)return;a.status=a.status==="Concluída"?"Pendente":"Concluída"}save();renderDay()};
-window.toggleProjectActionStatus=(pid,aid)=>{const standalone=!pid||pid==="independent",p=standalone?null:data.projects.find(x=>x.id===pid),a=standalone?(data.standaloneActions||[]).find(x=>x.id===aid):p?.actions.find(x=>x.id===aid);if(!a)return;a.status=a.status==="Concluída"?"Pendente":"Concluída";save();renderDay();renderPlan()};
+window.toggleProjectActionStatus=(pid,aid)=>{const a=projectActionSource(pid,aid);if(!a)return;setProjectActionStatus(pid,aid,a.status==="Concluída"?"Pendente":"Concluída")};
 window.openActivityChecklist=id=>{
  let a=null;
  const activityId=String(id);
@@ -1081,7 +1108,9 @@ function setupDayTabs(){
   tabs.forEach(x=>{const active=x===tab;x.classList.toggle("active",active);x.setAttribute("aria-selected",active?"true":"false")});
   document.getElementById("dayAgendaPanel").style.display=selected==="agenda"?"block":"none";
   document.getElementById("dayRecurringPanel").style.display=selected==="recurring"?"block":"none";
+  document.getElementById("dayHistoryPanel").style.display=selected==="history"?"block":"none";
   if(selected==="recurring")renderRecurringPanel();
+  if(selected==="history")renderDayHistory();
  }));
  ["recurringSearch","recurringPillarFilter","recurringFrequencyFilter","recurringStatusFilter"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener(id==="recurringSearch"?"input":"change",renderRecurringPanel)});
 }

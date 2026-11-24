@@ -388,6 +388,45 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
 .project-day-column .day-kanban-card{background:#FFFFFF!important}
 .project-day-column .day-kanban-empty{background:#FFFFFF!important}
 
+
+/* V60 — Compromissos do dia com cartões no padrão do Controle de Atividades PMO */
+#dayAgendaPanel .agenda>.activity-card{
+ background:#FFFFFF!important;
+ border:1px solid #DCE5ED!important;
+ border-left:4px solid #365B7D!important;
+ border-radius:10px!important;
+ box-shadow:0 2px 8px rgba(23,43,77,.045);
+ padding:10px 13px!important;
+ min-width:0;
+ overflow:visible!important;
+}
+#dayAgendaPanel .agenda>.activity-card.done{
+ background:#F8FAFC!important;
+ border-left-color:#94A3B8!important;
+}
+#dayAgendaPanel .activity-info{min-width:0;flex:1}
+#dayAgendaPanel .activity-info strong{
+ color:#243247;font-size:13px;font-weight:650;line-height:1.35;
+ white-space:normal;overflow-wrap:anywhere
+}
+#dayAgendaPanel .activity-info .meta{color:#718096;font-size:11px;line-height:1.35}
+#dayAgendaPanel .activity-actions{
+ flex-wrap:wrap;min-width:max-content;gap:5px;
+ border-left:1px solid #E2E8F0;padding-left:10px
+}
+#dayAgendaPanel .activity-actions button{
+ border:1px solid #DCE5ED!important;background:#FFFFFF!important;
+ color:#365B7D!important;border-radius:7px!important;
+ width:auto!important;min-width:28px!important;height:28px!important;
+ padding:4px 8px!important;font-size:11px!important
+}
+#dayAgendaPanel .activity-actions button:hover{background:#F1F5F9!important}
+@media(max-width:700px){
+ #dayAgendaPanel .agenda>.activity-card{align-items:flex-start;flex-wrap:wrap}
+ #dayAgendaPanel .activity-info{flex-basis:calc(100% - 4px)}
+ #dayAgendaPanel .activity-actions{width:100%;justify-content:flex-end;border-left:0;border-top:1px solid #E2E8F0;padding:7px 0 0}
+}
+
 </style>
 </head>
 <body>
@@ -445,7 +484,7 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
       <div class="stat"><span class="label">Execução do dia</span><strong id="execution">0%</strong><small>Atividades concluídas / total</small></div>
       <div class="stat"><span class="label">Atividades concluídas</span><strong id="doneCount">0</strong><small id="doneCountDetail">de 0 atividades planejadas</small></div>
     </div>
-    <div class="section-head"><div><h2>Atividades fixas</h2><span class="small muted">Rotina, compromissos e atividades com data definida</span></div><div class="toolbar"><input id="dayDate" type="date" style="width:auto"><button class="btn primary" id="addActivity">＋ Atividade fixa</button></div></div>
+    <div class="section-head"><div><h2>Compromissos do dia</h2><span class="small muted">Rotina, compromissos e atividades com data definida</span></div><div class="toolbar"><input id="dayDate" type="date" style="width:auto"><button class="btn primary" id="addActivity">＋ Compromisso</button></div></div>
     <div id="dayFixedActivities" class="day-fixed-list"></div>
     <div class="section-head"><div><h2>Controle de atividades</h2><span class="small muted">Gerencie o fluxo das atividades dos seus projetos</span></div></div>
     <div id="dayActionKanban" class="project-kanban"></div>

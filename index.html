@@ -253,16 +253,28 @@ textarea.journal{min-height:120px}
 .day-fixed-status{font-size:10px;color:#687789;background:#f0f3f6;border-radius:20px;padding:4px 8px;white-space:nowrap}
 .day-fixed-card.done .day-fixed-main strong{text-decoration:line-through;color:var(--muted)}.day-fixed-card.done{opacity:.72}
 .day-fixed-actions,.project-task-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.day-fixed-actions button,.project-task-actions button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 9px;color:#53657a;font-size:11px}
-.project-kanban{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
-.project-kanban-column{background:#f5f7fa;border:1px solid var(--line);border-radius:14px;padding:13px;min-width:0}
-.project-kanban-column>header{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 11px;margin-bottom:10px;border-bottom:1px solid var(--line)}
-.project-kanban-column>header strong{font-size:13px}.project-kanban-column>header span{font-size:11px;background:#fff;border-radius:20px;padding:3px 8px;color:var(--muted)}
-.project-kanban-cards{display:grid;gap:8px;min-height:100px;align-content:start}
-.project-task-card{background:#fff;border:1px solid var(--line);border-left:5px solid var(--task-color,#dce8f5);border-radius:11px;padding:11px;display:grid;gap:9px;min-width:0}
-.project-task-main strong{font-size:13px;overflow-wrap:anywhere}.project-task-main p{font-size:11px;color:var(--muted);margin:6px 0 0}
-.project-task-actions button.complete{background:#e5efe8;border-color:#d2e3d8;color:#3f7553}
+.project-kanban{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+.project-day-column{background:#f7f8f7}
+.project-day-column .day-kanban-head{align-items:flex-start}
+.project-day-column .day-kanban-head>div{display:grid;gap:6px}
+.project-day-column .day-kanban-title{display:inline-flex;width:max-content;max-width:100%;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700}
+.project-day-column .day-kanban-title.queue{background:#dce8f5;color:#365d86}
+.project-day-column .day-kanban-title.progress{background:#f8ebd8;color:#94652c}
+.project-day-column .day-kanban-title.done{background:#e2eee5;color:#477456}
+.project-day-column .day-kanban-head>div>span{font-size:11px;color:var(--muted)}
+.project-day-column .day-kanban-count{background:#fff;border:1px solid var(--line);border-radius:20px;padding:3px 9px;font-size:11px;font-weight:700;color:var(--ink)}
+.project-day-column .day-kanban-list{display:grid;gap:8px;min-height:110px;align-content:start}
+.project-day-column .day-kanban-card{background:#f7fbff;border:1px solid #e0eaf4;border-left:4px solid #b9cfe4;border-radius:11px;padding:11px;display:flex;flex-direction:column;gap:9px;min-width:0}
+.project-day-column .day-kanban-card-main{display:grid;gap:5px;min-width:0}
+.project-day-column .day-kanban-card-main>strong{font-size:12px;line-height:1.35;overflow-wrap:anywhere;color:#35475a}
+.project-day-column .day-kanban-card .meta{font-size:10px;color:#718196}
+.project-day-column .day-kanban-status{font-size:10px;color:#477456}
+.project-day-column .day-kanban-card .activity-actions{display:flex;justify-content:flex-end;gap:5px;flex-wrap:wrap}
+.project-day-column .day-kanban-card .activity-actions button{border:1px solid #dce5ed;border-radius:7px;background:#fff;color:#5c6d7e;padding:5px 8px;font-size:10px}
+.project-day-column .day-kanban-card .activity-actions button.day-kanban-complete{background:#e2eee5;border-color:#d1e2d5;color:#477456}
 .day-history-list{display:grid;gap:8px}.day-history-card{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:#fff;border:1px solid var(--line);border-radius:12px}.day-history-card>div:first-child{min-width:0}.day-history-card strong{font-size:13px}
-@media(max-width:760px){.project-kanban{grid-template-columns:1fr}.day-fixed-card{align-items:flex-start;flex-wrap:wrap}.day-fixed-status{margin-left:auto}.day-fixed-actions{width:100%;justify-content:flex-end}.day-history-card{align-items:flex-start;flex-direction:column}.day-history-card .toolbar{width:100%;justify-content:flex-end}}
+@media(max-width:950px){.project-kanban{grid-template-columns:1fr 1fr}.project-day-column:last-child{grid-column:1/-1}}
+@media(max-width:650px){.project-kanban{grid-template-columns:1fr}.project-day-column:last-child{grid-column:auto}.day-fixed-card{align-items:flex-start;flex-wrap:wrap}.day-fixed-status{margin-left:auto}.day-fixed-actions{width:100%;justify-content:flex-end}.day-history-card{align-items:flex-start;flex-direction:column}.day-history-card .toolbar{width:100%;justify-content:flex-end}}
 
 </style>
 </head>
@@ -313,7 +325,7 @@ textarea.journal{min-height:120px}
     </div>
     <div class="section-head"><div><h2>Atividades fixas</h2><span class="small muted">Rotina, compromissos e atividades com data definida</span></div><div class="toolbar"><input id="dayDate" type="date" style="width:auto"><button class="btn primary" id="addActivity">＋ Atividade fixa</button></div></div>
     <div id="dayFixedActivities" class="day-fixed-list"></div>
-    <div class="section-head"><div><h2>Atividades de projetos</h2><span class="small muted">Tarefas sem dia definido · organize conforme sua disponibilidade</span></div></div>
+    <div class="section-head"><div><h2>Controle de atividades</h2><span class="small muted">Gerencie o fluxo das atividades dos seus projetos</span></div></div>
     <div id="dayActionKanban" class="project-kanban"></div>
     <section class="card" id="dayBrainDumpCard" style="padding:16px;margin:18px 0">
       <div class="section-head" style="margin:0 0 10px"><div><h2>Brain Dump</h2><span class="small muted">Capture ideias, lembretes e tarefas ao longo do dia</span></div><span class="small muted" id="dayBrainDumpCount">0 itens</span></div>
@@ -563,11 +575,26 @@ function setProjectActionStatus(pid,aid,status){const a=projectActionSource(pid,
 window.setProjectActionStatus=setProjectActionStatus;
 function renderProjectActionKanban(){
  const host=document.getElementById("dayActionKanban");if(!host)return;
- const tasks=allProjectActions().filter(a=>!(a.plannedDate||a.start)&&a.status!=="Concluída"&&a.status!=="Cancelada");
- const pending=tasks.filter(a=>a.status!=="Em andamento"),progress=tasks.filter(a=>a.status==="Em andamento");
- function card(a){const pid=a.projectId||"independent",pidx=Number(a.pillar)||0,meta=[a.projectName||"Sem projeto",pillars[pidx]||"Sem pilar",a.priority||"Média",Number(a.plannedHours??a.estimate??0).toLocaleString("pt-BR")+"h planejadas"].join(" · "),move=a.status==="Em andamento"?"Pendente":"Em andamento",label=a.status==="Em andamento"?"Voltar à fila":"Iniciar";return '<article class="project-task-card" style="--task-color:'+(colors[pidx]||"#dce8f5")+'"><div class="project-task-main"><strong>'+esc(a.name)+'</strong><div class="meta">'+esc(meta)+'</div>'+(a.description?'<p>'+esc(a.description)+'</p>':'')+'</div><div class="project-task-actions"><button type="button" onclick="setProjectActionStatus(\''+pid+'\',\''+a.id+'\',\''+move+'\')">'+label+'</button><button type="button" onclick="editAction(\''+pid+'\',\''+a.id+'\')">Editar</button><button type="button" class="complete" onclick="setProjectActionStatus(\''+pid+'\',\''+a.id+'\',\'Concluída\')">✓ Concluir</button></div></article>'}
- function col(title,items){return '<section class="project-kanban-column"><header><strong>'+title+'</strong><span>'+items.length+'</span></header><div class="project-kanban-cards">'+(items.length?items.map(card).join(""):'<div class="day-kanban-empty">Nenhuma atividade nesta coluna.</div>')+'</div></section>'}
- host.innerHTML=col("Fila",pending)+col("Em execução",progress)
+ const selectedDate=document.getElementById("dayDate").value||today;
+ const all=allProjectActions().filter(a=>!(a.plannedDate||a.start)&&a.status!=="Cancelada");
+ const queue=all.filter(a=>a.status==="Fila Meu Dia"||a.status==="Fila");
+ const progress=all.filter(a=>a.status==="Em execução"||a.status==="Em andamento");
+ const completed=all.filter(a=>a.status==="Concluída"&&a.completedAt&&dateISO(new Date(a.completedAt))===selectedDate).sort((a,b)=>(b.completedAt||"").localeCompare(a.completedAt||""));
+ function card(a,column){
+  const pid=a.projectId||"independent";
+  const meta=[a.projectName||"Sem projeto",Number(a.plannedHours??a.estimate??0).toLocaleString("pt-BR")+"h planejadas",a.priority||"Média"].join(" · ");
+  let actions="";
+  if(column==="queue")actions='<button type="button" onclick="setProjectActionStatus(\''+pid+'\',\''+a.id+'\',\'Em execução\')">Em execução</button><button type="button" onclick="setProjectActionStatus(\''+pid+'\',\''+a.id+'\',\'Próximas ações\')">Próximas ações</button>';
+  if(column==="progress")actions='<button type="button" onclick="setProjectActionStatus(\''+pid+'\',\''+a.id+'\',\'Fila Meu Dia\')">Voltar para a fila</button><button type="button" class="day-kanban-complete" onclick="setProjectActionStatus(\''+pid+'\',\''+a.id+'\',\'Concluída\')">✓ Concluir</button>';
+  if(column==="done")actions='<button type="button" onclick="setProjectActionStatus(\''+pid+'\',\''+a.id+'\',\'Em execução\')">Reabrir</button>';
+  actions+='<button type="button" onclick="editAction(\''+pid+'\',\''+a.id+'\')">Editar</button>';
+  const completedAt=column==="done"&&a.completedAt?new Date(a.completedAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"";
+  return '<article class="day-kanban-card"><div class="day-kanban-card-main"><strong>'+esc(a.name)+'</strong><span class="meta">'+esc(meta)+'</span>'+(a.description?'<span class="meta">'+esc(a.description)+'</span>':'')+(completedAt?'<span class="day-kanban-status">Concluída às '+completedAt+'</span>':'')+'</div><div class="activity-actions">'+actions+'</div></article>';
+ }
+ function col(title,items,key,color){
+  return '<section class="day-kanban-column project-day-column"><div class="day-kanban-head"><div><strong class="day-kanban-title '+color+'">'+title+'</strong><span>'+items.length+' atividade(s)</span></div><span class="day-kanban-count">'+items.length+'</span></div><div class="day-kanban-list">'+(items.length?items.map(a=>card(a,key)).join(""):'<div class="day-kanban-empty">Nenhuma atividade nesta coluna.</div>')+'</div></section>';
+ }
+ host.innerHTML=col("Fila Meu Dia",queue,"queue","queue")+col("Em execução",progress,"progress","progress")+col("Concluída do dia",completed,"done","done");
 }
 function renderDayHistory(){
  const host=document.getElementById("dayActionHistory");if(!host)return;
@@ -779,7 +806,7 @@ window.addAction=pid=>{
  const p=pid?data.projects.find(x=>x.id===pid):null;
  if(pid&&!p)return;
  const standalone=!p;
- openModal(standalone?"Nova ação independente":"Nova ação",`<form><div class="form-grid">${field("Nome da ação","name","text","required")}<div class="field"><label>Prioridade</label><select name="priority"><option>Alta</option><option selected>Média</option><option>Baixa</option></select></div><div class="field full"><label>Descrição</label><textarea name="description"></textarea></div>${field("Data planejada","plannedDate","date")}${field("Hora de início","startTime","time")}${field("Hora de término","endTime","time")}${field("Horas planejadas","plannedHours","number",'min="0" step=".25" value="0"')}${field("Horas realizadas","actual","number",'min="0" step=".25" value="0"')}${standalone?`<div class="field"><label>Pilar</label><select name="pillar">${pillars.map((x,i)=>`<option value="${i}">${x}</option>`).join("")}</select></div>`:`<div class="field"><label>Pilar do projeto</label><input value="${pillars[Number(p.pillar)||0]}" disabled></div>`}<div class="field"><label>Status</label><select name="status"><option>Pendente</option><option>Concluída</option></select></div><div class="field full"><label>Observações</label><textarea name="notes"></textarea></div></div><div style="text-align:right;margin-top:15px"><button class="btn primary">Salvar ação</button></div></form>`,f=>{
+ openModal(standalone?"Nova ação independente":"Nova ação",`<form><div class="form-grid">${field("Nome da ação","name","text","required")}<div class="field"><label>Prioridade</label><select name="priority"><option>Alta</option><option selected>Média</option><option>Baixa</option></select></div><div class="field full"><label>Descrição</label><textarea name="description"></textarea></div>${field("Data planejada","plannedDate","date")}${field("Hora de início","startTime","time")}${field("Hora de término","endTime","time")}${field("Horas planejadas","plannedHours","number",'min="0" step=".25" value="0"')}${field("Horas realizadas","actual","number",'min="0" step=".25" value="0"')}${standalone?`<div class="field"><label>Pilar</label><select name="pillar">${pillars.map((x,i)=>`<option value="${i}">${x}</option>`).join("")}</select></div>`:`<div class="field"><label>Pilar do projeto</label><input value="${pillars[Number(p.pillar)||0]}" disabled></div>`}<div class="field"><label>Status</label><select name="status"><option>Próximas ações</option><option>Fila Meu Dia</option><option>Em execução</option><option>Concluída</option></select></div><div class="field full"><label>Observações</label><textarea name="notes"></textarea></div></div><div style="text-align:right;margin-top:15px"><button class="btn primary">Salvar ação</button></div></form>`,f=>{
   const st=f.get("startTime"),en=f.get("endTime");
   if(st&&en&&timeToMinutes(en)<=timeToMinutes(st)){alert("A hora de término deve ser posterior à hora de início.");return}
   const action={id:crypto.randomUUID(),name:f.get("name"),priority:f.get("priority"),description:f.get("description"),plannedDate:f.get("plannedDate"),startTime:st,endTime:en,plannedHours:Number(f.get("plannedHours"))||0,estimate:Number(f.get("plannedHours"))||0,actual:Number(f.get("actual"))||0,pillar:standalone?Number(f.get("pillar")):Number(p.pillar??0),status:f.get("status"),notes:f.get("notes")};
@@ -793,9 +820,9 @@ window.editAction=(pid,aid)=>{
  const p=standalone?null:data.projects.find(x=>x.id===pid);
  const a=standalone?(data.standaloneActions||[]).find(x=>x.id===aid):p?.actions.find(x=>x.id===aid);
  if(!a)return;
- openModal("Editar ação",`<form><div class="form-grid">${field("Nome da ação","name","text",`required value="${esc(a.name||"")}"`)}<div class="field"><label>Prioridade</label><select name="priority">${["Alta","Média","Baixa"].map(x=>`<option ${a.priority===x?"selected":""}>${x}</option>`).join("")}</select></div><div class="field full"><label>Descrição</label><textarea name="description">${esc(a.description||"")}</textarea></div>${field("Data planejada","plannedDate","date",`value="${a.plannedDate||a.start||""}"`)}${field("Hora de início","startTime","time",`value="${a.startTime||""}"`)}${field("Hora de término","endTime","time",`value="${a.endTime||""}"`)}${field("Horas planejadas","plannedHours","number",`min="0" step=".25" value="${a.plannedHours??a.estimate??0}"`)}${field("Horas realizadas","actual","number",`min="0" step=".25" value="${a.actual??0}"`)}${standalone?`<div class="field"><label>Pilar</label><select name="pillar">${pillars.map((x,i)=>`<option value="${i}" ${Number(a.pillar??0)===i?"selected":""}>${x}</option>`).join("")}</select></div>`:`<div class="field"><label>Pilar herdado do projeto</label><input value="${pillars[Number(p.pillar)||0]}" disabled></div>`}<div class="field"><label>Status</label><select name="status">${["Pendente","Concluída"].map(x=>`<option ${(a.status==="Concluída"?"Concluída":"Pendente")===x?"selected":""}>${x}</option>`).join("")}</select></div><div class="field full"><label>Observações</label><textarea name="notes">${esc(a.notes||"")}</textarea></div></div><div style="text-align:right;margin-top:15px"><button class="btn primary">Salvar alterações</button></div></form>`,f=>{
+ openModal("Editar ação",`<form><div class="form-grid">${field("Nome da ação","name","text",`required value="${esc(a.name||"")}"`)}<div class="field"><label>Prioridade</label><select name="priority">${["Alta","Média","Baixa"].map(x=>`<option ${a.priority===x?"selected":""}>${x}</option>`).join("")}</select></div><div class="field full"><label>Descrição</label><textarea name="description">${esc(a.description||"")}</textarea></div>${field("Data planejada","plannedDate","date",`value="${a.plannedDate||a.start||""}"`)}${field("Hora de início","startTime","time",`value="${a.startTime||""}"`)}${field("Hora de término","endTime","time",`value="${a.endTime||""}"`)}${field("Horas planejadas","plannedHours","number",`min="0" step=".25" value="${a.plannedHours??a.estimate??0}"`)}${field("Horas realizadas","actual","number",`min="0" step=".25" value="${a.actual??0}"`)}${standalone?`<div class="field"><label>Pilar</label><select name="pillar">${pillars.map((x,i)=>`<option value="${i}" ${Number(a.pillar??0)===i?"selected":""}>${x}</option>`).join("")}</select></div>`:`<div class="field"><label>Pilar herdado do projeto</label><input value="${pillars[Number(p.pillar)||0]}" disabled></div>`}<div class="field"><label>Status</label><select name="status">${["Próximas ações","Fila Meu Dia","Em execução","Concluída"].map(x=>`<option ${(a.status||"Próximas ações")===x?"selected":""}>${x}</option>`).join("")}</select></div><div class="field full"><label>Observações</label><textarea name="notes">${esc(a.notes||"")}</textarea></div></div><div style="text-align:right;margin-top:15px"><button class="btn primary">Salvar alterações</button></div></form>`,f=>{
   const st=f.get("startTime"),en=f.get("endTime");if(st&&en&&timeToMinutes(en)<=timeToMinutes(st)){alert("A hora de término deve ser posterior à hora de início.");return}
-  Object.assign(a,{name:f.get("name"),priority:f.get("priority"),description:f.get("description"),plannedDate:f.get("plannedDate"),startTime:st,endTime:en,plannedHours:Number(f.get("plannedHours"))||0,estimate:Number(f.get("plannedHours"))||0,actual:Number(f.get("actual"))||0,status:f.get("status"),notes:f.get("notes")});
+  Object.assign(a,{name:f.get("name"),priority:f.get("priority"),description:f.get("description"),plannedDate:f.get("plannedDate"),startTime:st,endTime:en,plannedHours:Number(f.get("plannedHours"))||0,estimate:Number(f.get("plannedHours"))||0,actual:Number(f.get("actual"))||0,status:f.get("status"),notes:f.get("notes")});if(a.status==="Concluída")a.completedAt=a.completedAt||new Date().toISOString();else delete a.completedAt;
   if(standalone)a.pillar=Number(f.get("pillar"));
   save();renderPlan();renderDay();
  });
@@ -846,7 +873,7 @@ function renderActionsTable(){
 }
 window.updateActionField=(pid,aid,key,value)=>{
  const standalone=!pid||pid==="independent",p=standalone?null:data.projects.find(x=>x.id===pid),a=standalone?(data.standaloneActions||[]).find(x=>x.id===aid):p?.actions.find(x=>x.id===aid);if(!a)return;
- if(key==="plannedHours"){a.plannedHours=Math.max(0,Number(value)||0);a.estimate=a.plannedHours}else if(key==="pillar"&&standalone)a.pillar=Number(value);else if(key==="status")a.status=value==="Concluída"?"Concluída":"Pendente";else a[key]=value;
+ if(key==="plannedHours"){a.plannedHours=Math.max(0,Number(value)||0);a.estimate=a.plannedHours}else if(key==="pillar"&&standalone)a.pillar=Number(value);else if(key==="status"){a.status=value;if(value==="Concluída")a.completedAt=new Date().toISOString();else delete a.completedAt}else a[key]=value;
  if(a.startTime&&a.endTime&&timeToMinutes(a.endTime)<=timeToMinutes(a.startTime)){alert("A hora de término deve ser posterior à hora de início.");a.endTime="";save();renderActionsTable();return}
  save();renderProjects();renderActionsTable();renderDay();
 };

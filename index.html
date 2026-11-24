@@ -831,7 +831,7 @@ window.setFixedActual=(kind,id,value)=>{
   const match=String(id).match(/^rec-(.+)-(\\d{4}-\\d{2}-\\d{2})$/);
   if(match)target=data.recurringTasks.find(x=>String(x.id)===match[1]);
  }
- if(kind==="project")target=projectActionSource(id==="independent"?"independent":undefined,id);
+ if(kind==="project")target=allProjectActions().find(x=>String(x.id)===String(id));
  if(kind==="exercise")target=(data.exerciseActivities||[]).find(x=>String(x.id)===String(id));
  if(!target)return;
  target.actual=parsed;save();renderDay();

@@ -427,6 +427,38 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
  #dayAgendaPanel .activity-actions{width:100%;justify-content:flex-end;border-left:0;border-top:1px solid #E2E8F0;padding:7px 0 0}
 }
 
+
+/* V61 — Compromissos em linha PMO: horário à esquerda e apontamentos à direita */
+.day-fixed-list{display:grid;gap:8px;margin-bottom:24px}
+.day-fixed-row{
+ display:grid;grid-template-columns:132px minmax(0,1fr) auto;align-items:center;gap:14px;
+ padding:12px 14px;background:#FFFFFF;border:1px solid #DCE5ED;border-radius:11px;
+ box-shadow:0 2px 8px rgba(23,43,77,.035);min-width:0
+}
+.day-fixed-time{font-size:14px;font-weight:700;color:#365B7D;white-space:nowrap;font-variant-numeric:tabular-nums}
+.day-fixed-main{min-width:0;display:grid;gap:4px}
+.day-fixed-main strong{font-size:13px;font-weight:650;color:#243247;overflow-wrap:anywhere}
+.day-fixed-main .meta{font-size:11px;color:#718096;overflow-wrap:anywhere}
+.day-fixed-controls{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
+.day-fixed-real{display:flex;align-items:center;gap:5px;color:#718096;font-size:11px;white-space:nowrap}
+.day-fixed-real input{width:68px!important;padding:6px 8px!important;border-radius:8px!important;font-size:12px;text-align:center;font-variant-numeric:tabular-nums}
+.day-fixed-check{display:flex;align-items:center;gap:5px;color:#718096;font-size:11px;white-space:nowrap}
+.day-fixed-check input{width:16px;height:16px;accent-color:#365B7D}
+.day-fixed-edit{border:1px solid #DCE5ED;background:#FFFFFF;color:#365B7D;border-radius:8px;padding:7px 11px;font-size:11px;font-weight:600}
+.day-fixed-edit:hover{background:#F1F5F9}
+.day-fixed-row.done{background:#F8FAFC}
+.day-fixed-row.done .day-fixed-main strong{text-decoration:line-through;color:#7C8998}
+@media(max-width:900px){
+ .day-fixed-row{grid-template-columns:110px minmax(0,1fr);gap:8px 12px}
+ .day-fixed-controls{grid-column:2;justify-content:flex-start;flex-wrap:wrap}
+}
+@media(max-width:600px){
+ .day-fixed-row{grid-template-columns:1fr;gap:8px;padding:11px}
+ .day-fixed-time{font-size:12px}
+ .day-fixed-controls{grid-column:1;justify-content:flex-start;gap:9px}
+ .day-fixed-real input{width:62px!important}
+}
+
 </style>
 </head>
 <body>
@@ -765,19 +797,59 @@ function renderDay(){
  const exerciseFixed=(data.exerciseActivities||[]).filter(a=>(a.days||[]).includes(dateObj.getDay())).map(a=>({...a,kind:"exercise",status:(a.completedDates||[]).includes(d)?"Concluída":"Pendente"}));
  const fixed=[...personal,...recurring,...projectFixed,...exerciseFixed].sort((a,b)=>(a.start||a.startTime||"").localeCompare(b.start||b.startTime||""));
  const host=document.getElementById("dayFixedActivities");
- function card(name,meta,status,actions,color){return '<article class="day-fixed-card '+(status==="Concluída"?"done":"")+'" style="--fixed-color:'+color+'"><div class="day-fixed-main"><strong>'+esc(name)+'</strong><div class="meta">'+esc(meta)+'</div></div><span class="day-fixed-status">'+esc(status||"Pendente")+'</span><div class="day-fixed-actions">'+actions+'</div></article>'}
- host.innerHTML=fixed.length?fixed.map(a=>{
-  const pidx=Number(a.pillar)||0,when=a.start&&a.end?a.start+"–"+a.end+" · ":a.startTime&&a.endTime?a.startTime+"–"+a.endTime+" · ":"";
-  if(a.kind==="exercise"){const done=a.status==="Concluída";return card(a.name,when+(a.category||"Exercício")+" · "+(Number(a.minutes)||30)+" min",a.status,'<button type="button" onclick="toggleExercise(\''+a.id+'\',\''+d+'\','+(!done)+')">'+(done?"↶":"✓")+'</button><button type="button" onclick="editExercise(\''+a.id+'\')">Editar</button>',"#6487B2")}
-  if(a.kind==="project"){const done=a.status==="Concluída";return card(a.name,when+(a.projectName||"Sem projeto")+" · "+(pillars[pidx]||"Sem pilar")+" · "+Number(a.plannedHours??a.estimate??0).toLocaleString("pt-BR")+"h",a.status,'<button type="button" onclick="editAction(\''+(a.projectId||"independent")+'\',\''+a.actionId+'\')">Editar</button><button type="button" onclick="toggleProjectActionStatus(\''+(a.projectId||"independent")+'\',\''+a.actionId+'\')">'+(done?"↶":"✓")+'</button>',colors[pidx]||"#dce8f5")}
-  if(a.kind==="recurring"){const done=a.status==="Concluída";return card(a.name,when+(pillars[pidx]||"Sem pilar")+" · Recorrente",a.status,'<button type="button" onclick="window.editActivity(\''+a.id+'\')">Editar</button><button type="button" onclick="window.toggleActivityStatus(\''+a.id+'\')">'+(done?"↶":"✓")+'</button>',colors[pidx]||"#dce8f5")}
-  const done=a.status==="Concluída";return card(a.name,when+(pillars[pidx]||"Sem pilar")+(a.end&&a.start?" · "+duration(a).toFixed(2).replace(".",",")+"h":""),a.status||"Pendente",'<button type="button" onclick="window.editActivity(\''+a.id+'\')">Editar</button><button type="button" onclick="window.toggleActivityStatus(\''+a.id+'\')">'+(done?"↶":"✓")+'</button>',colors[pidx]||"#dce8f5")
- }).join(""):'<div class="board-note">Nenhuma atividade fixa para esta data. Cadastre uma atividade ou configure uma recorrência.</div>';
+ function card(a){
+  const pidx=Number(a.pillar)||0;
+  const startTime=a.start||a.startTime||"";
+  const endTime=a.end||a.endTime||"";
+  const time=startTime&&endTime?startTime+" – "+endTime:startTime||"—";
+  const done=a.status==="Concluída";
+  const plannedValue=a.kind==="exercise"?(Number(a.minutes)||30)/60:a.kind==="project"?Number(a.plannedHours??a.estimate??0):duration(a);
+  const actualValue=a.kind==="exercise"?(Number(a.actual)||0):Number(a.actual)||0;
+  const meta=a.kind==="project"?(a.projectName||"Sem projeto")+" · "+(pillars[pidx]||"Sem pilar")+" · "+Number(a.plannedHours??a.estimate??0).toLocaleString("pt-BR")+"h planejadas":a.kind==="exercise"?(a.category||"Exercício")+" · "+(Number(a.minutes)||30)+" min · Recorrente":(pillars[pidx]||"Sem pilar")+(a.kind==="recurring"?" · Recorrente":"")+(plannedValue?" · "+plannedValue.toLocaleString("pt-BR")+"h planejadas":"");
+  const id=String(a.kind==="project"?a.actionId:a.id);
+  const edit=a.kind==="project"?'editAction(\''+(a.projectId||"independent")+'\',\''+id+'\')':a.kind==="exercise"?'editExercise(\''+id+'\')':'window.editActivity(\''+id+'\')';
+  const kind=a.kind;
+  return '<article class="day-fixed-row '+(done?"done":"")+'">'+
+   '<div class="day-fixed-time">'+esc(time)+'</div>'+
+   '<div class="day-fixed-main"><strong>'+esc(a.name)+'</strong><div class="meta">'+esc(meta)+'</div></div>'+
+   '<div class="day-fixed-controls"><label class="day-fixed-real"><span>Real</span><input type="number" min="0" step="0.25" value="'+(actualValue?String(actualValue).replace(".",","):"0")+'" aria-label="Horas realizadas para '+esc(a.name)+'" onchange="setFixedActual(\''+kind+'\',\''+id+'\',this.value)"><span>h</span></label>'+
+   '<label class="day-fixed-check"><input type="checkbox" '+(done?"checked":"")+' onchange="setFixedDone(\''+kind+'\',\''+id+'\',\''+d+'\',this.checked)"><span>Concluída</span></label>'+
+   '<button type="button" class="day-fixed-edit" onclick="'+edit+'">Editar</button></div></article>';
+ }
+ host.innerHTML=fixed.length?fixed.map(card).join(""):'<div class="board-note">Nenhum compromisso para esta data. Cadastre um compromisso ou configure uma recorrência.</div>';
  const planned=fixed.reduce((sum,a)=>sum+(a.kind==="exercise"?(Number(a.minutes)||0)/60:a.kind==="project"?Number(a.plannedHours??a.estimate??0):duration(a)),0),actual=fixed.reduce((sum,a)=>sum+(a.kind==="exercise"?(a.status==="Concluída"?(Number(a.minutes)||0)/60:0):Number(a.actual)||0),0),done=fixed.filter(a=>a.status==="Concluída").length;
  document.getElementById("plannedHours").textContent=planned.toFixed(1).replace(".",",")+"h";document.getElementById("actualHours").textContent=actual.toFixed(1).replace(".",",")+"h";document.getElementById("execution").textContent=(fixed.length?Math.round(done/fixed.length*100):0)+"%";document.getElementById("doneCount").textContent=done;document.getElementById("doneCountDetail").textContent="de "+fixed.length+" atividades fixas";
  renderProjectActionKanban();renderDayHistory()
 }
 
+window.setFixedActual=(kind,id,value)=>{
+ const parsed=Number(String(value).replace(",","."));
+ if(!Number.isFinite(parsed)||parsed<0){alert("Informe um número válido de horas.");renderDay();return}
+ let target=null;
+ if(kind==="personal")target=data.activities.find(x=>String(x.id)===String(id));
+ if(kind==="recurring"){
+  const match=String(id).match(/^rec-(.+)-(\\d{4}-\\d{2}-\\d{2})$/);
+  if(match)target=data.recurringTasks.find(x=>String(x.id)===match[1]);
+ }
+ if(kind==="project")target=projectActionSource(id==="independent"?"independent":undefined,id);
+ if(kind==="exercise")target=(data.exerciseActivities||[]).find(x=>String(x.id)===String(id));
+ if(!target)return;
+ target.actual=parsed;save();renderDay();
+};
+window.setFixedDone=(kind,id,date,checked)=>{
+ if(kind==="personal"){
+  const a=data.activities.find(x=>String(x.id)===String(id));if(a)a.status=checked?"Concluída":"Pendente";
+ }else if(kind==="recurring"){
+  const match=String(id).match(/^rec-(.+)-(\\d{4}-\\d{2}-\\d{2})$/);
+  const t=match&&data.recurringTasks.find(x=>String(x.id)===match[1]);
+  if(t){t.completedDates=Array.isArray(t.completedDates)?t.completedDates:[];t.completedDates=t.completedDates.filter(x=>x!==date);if(checked)t.completedDates.push(date)}
+ }else if(kind==="project"){
+  const a=allProjectActions().find(x=>String(x.id)===String(id));if(a){a.status=checked?"Concluída":"Pendente";if(checked)a.completedAt=new Date().toISOString();else delete a.completedAt}
+ }else if(kind==="exercise"){
+  const a=(data.exerciseActivities||[]).find(x=>String(x.id)===String(id));if(a){a.completedDates=Array.isArray(a.completedDates)?a.completedDates:[];a.completedDates=a.completedDates.filter(x=>x!==date);if(checked)a.completedDates.push(date)}
+ }
+ save();renderDay();
+};
 window.editActivity=id=>{
  let recurring=id.startsWith("rec-"), date="", target;
  if(recurring){const match=String(id).match(/^rec-(.+)-(\d{4}-\d{2}-\d{2})$/);if(!match)return;date=match[2];const rid=match[1];target=data.recurringTasks.find(x=>x.id===rid)}

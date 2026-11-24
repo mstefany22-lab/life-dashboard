@@ -1028,20 +1028,20 @@ function renderChecklist(){
    const items=(c.items||[]).map(x=>String(x.text??x));
    const tags=(c.tags||[]).map(t=>'<span class="checklist-tag">'+esc(t)+'</span>').join("");
    const preview=items.slice(0,4).map((item,i)=>'<li><span class="checklist-item-number">'+(i+1)+'</span><span>'+esc(item)+'</span></li>').join("");
-   return '<article class="checklist-template-card"><div class="checklist-template-top"><div class="checklist-template-icon">☑</div><div class="checklist-template-actions"><button type="button" class="icon-btn" title="Editar checklist" onclick="editChecklist(\''+c.id+'\')">✎</button><button type="button" class="icon-btn" title="Excluir checklist" onclick="deleteChecklist(\''+c.id+'\')">×</button></div></div><h3>'+esc(c.name)+'</h3><div class="checklist-tags">'+(tags||'<span class="checklist-tag muted-tag">Sem tags</span>')+'</div><div class="checklist-template-meta">'+items.length+' itens</div><ul class="checklist-template-preview">'+preview+'</ul>'+(items.length>4?'<div class="checklist-more">+'+(items.length-4)+' itens adicionais</div>':"")+'</article>';
+   return '<article class="checklist-template-card"><div class="checklist-template-top"><div class="checklist-template-icon">☑</div><div class="checklist-template-actions"><button type="button" class="icon-btn" title="Editar checklist" onclick="editChecklist(\''+c.id+'\')">✎</button></div></div><h3>'+esc(c.name)+'</h3><div class="checklist-tags">'+(tags||'<span class="checklist-tag muted-tag">Sem tags</span>')+'</div><div class="checklist-template-meta">'+items.length+' itens</div><ul class="checklist-template-preview">'+preview+'</ul>'+(items.length>4?'<div class="checklist-more">+'+(items.length-4)+' itens adicionais</div>':"")+'</article>';
   }).join(""):'<div class="board-note">'+(data.checklists.length?"Nenhum checklist corresponde à busca ou tag selecionada.":"Nenhum checklist cadastrado. Crie seu primeiro modelo para começar.")+'</div>';
  }
  search.oninput=draw;tagFilter.onchange=draw;draw();
 }
 window.deleteChecklist=id=>{
- const c=data.checklists.find(x=>String(x.id)===String(id));if(!c)return;
- if(!confirm('Excluir o checklist "'+c.name+'"? Atividades associadas deixarão de encontrá-lo.'))return;
- data.checklists=data.checklists.filter(x=>String(x.id)!==String(id));save();renderChecklist();
+ const c=data.checklists.find(x=>String(x.id)===String(id));if(!c)return false;
+ if(!confirm('Excluir o checklist "'+c.name+'"? Atividades associadas deixarão de encontrá-lo.'))return false;
+ data.checklists=data.checklists.filter(x=>String(x.id)!==String(id));save();renderChecklist();return true;
 };
 function checklistForm(existing){
  const initialItems=(existing?.items||[]).map(item=>String(item.text??item));
  const rows=initialItems.length?initialItems:[""];
- openModal(existing?"Editar checklist":"Novo checklist",`<form id="checklistEditor"><div class="form-grid">${field("Nome","name")}<div class="field full"><label for="checklistTags">Tags</label><input id="checklistTags" name="tags" type="text" placeholder="Ex.: Casa, Rotina, Trabalho"><small class="muted">Separe as tags por vírgula. Você pode usar várias tags no mesmo checklist.</small></div><div class="field full"><label>Itens do checklist</label><div id="checklistEditorItems" style="display:grid;gap:8px"></div><button type="button" class="btn" id="addChecklistItem" style="margin-top:10px">＋ Adicionar item</button><p class="small muted" style="margin:8px 0 0">Cada item terá seu próprio checkbox quando o checklist for aberto em uma atividade.</p></div></div><div style="text-align:right;margin-top:15px"><button class="btn primary">Salvar checklist</button></div></form>`,f=>{
+ openModal(existing?"Editar checklist":"Novo checklist",`<form id="checklistEditor"><div class="form-grid">${field("Nome","name")}<div class="field full"><label for="checklistTags">Tags</label><input id="checklistTags" name="tags" type="text" placeholder="Ex.: Casa, Rotina, Trabalho"><small class="muted">Separe as tags por vírgula. Você pode usar várias tags no mesmo checklist.</small></div><div class="field full"><label>Itens do checklist</label><div id="checklistEditorItems" style="display:grid;gap:8px"></div><button type="button" class="btn" id="addChecklistItem" style="margin-top:10px">＋ Adicionar item</button><p class="small muted" style="margin:8px 0 0">Cada item terá seu próprio checkbox quando o checklist for aberto em uma atividade.</p></div></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:15px">${existing?'<button type="button" class="btn danger" id="deleteChecklistFromEditor">Excluir checklist</button>':'<span></span>'}<button class="btn primary">Salvar checklist</button></div></form>`,f=>{
   const items=[...document.querySelectorAll("#checklistEditorItems [data-checklist-text]")].map(input=>input.value.trim()).filter(Boolean).map(text=>({text,notes:""}));
   if(!items.length){alert("Adicione pelo menos um item ao checklist.");return}
   const tags=[...new Set(String(f.get("tags")||"").split(",").map(t=>t.trim()).filter(Boolean))];
@@ -1049,6 +1049,8 @@ function checklistForm(existing){
   if(existing)data.checklists=data.checklists.map(x=>x.id===existing.id?saved:x);else data.checklists.push(saved);
   save();renderChecklist();
  });
+ const deleteEditorButton=document.getElementById("deleteChecklistFromEditor");
+ if(deleteEditorButton)deleteEditorButton.onclick=()=>{if(deleteChecklist(existing.id))document.getElementById("modal").classList.remove("open")};
  const form=document.querySelector("#modalBody #checklistEditor");
  form.elements.name.value=existing?.name||"";
  form.elements.tags.value=(existing?.tags||(Number.isInteger(Number(existing?.pillar))&&pillars[Number(existing.pillar)]?[pillars[Number(existing.pillar)]]:[])).join(", ");

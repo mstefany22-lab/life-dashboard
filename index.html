@@ -868,7 +868,9 @@ function renderDay(){
    '<div class="day-fixed-main"><strong>'+esc(a.name)+'</strong><div class="meta">'+esc(meta)+'</div></div>'+
    '<div class="day-fixed-controls"><label class="day-fixed-real"><span>Real</span><input type="number" min="0" step="0.25" value="'+(actualValue?String(actualValue).replace(".",","):"0")+'" aria-label="Horas realizadas para '+esc(a.name)+'" onchange="setFixedActual(\''+kind+'\',\''+id+'\',this.value)"><span>h</span></label>'+
    '<label class="day-fixed-check"><input type="checkbox" '+(done?"checked":"")+' onchange="setFixedDone(\''+kind+'\',\''+id+'\',\''+d+'\',this.checked)"><span>Concluída</span></label>'+
-   '<button type="button" class="day-fixed-edit" onclick="'+edit+'">Editar</button></div></article>';
+   '<button type="button" class="day-fixed-edit" onclick="'+edit+'">Editar</button>'+
+   ((kind==="personal"||kind==="recurring")?'<button type="button" class="day-fixed-edit" title="Excluir apenas este compromisso" onclick="deleteActivity(\''+id+'\')">Excluir</button>':'')+
+   '</div></article>';
  }
  host.innerHTML=fixed.length?fixed.map(card).join(""):'<div class="board-note">Nenhum compromisso para esta data. Cadastre um compromisso ou configure uma recorrência.</div>';
  const planned=fixed.reduce((sum,a)=>sum+(a.kind==="exercise"?(Number(a.minutes)||0)/60:a.kind==="project"?Number(a.plannedHours??a.estimate??0):duration(a)),0),actual=fixed.reduce((sum,a)=>sum+(a.kind==="exercise"?(a.status==="Concluída"?(Number(a.minutes)||0)/60:0):Number(a.actual)||0),0),done=fixed.filter(a=>a.status==="Concluída").length;

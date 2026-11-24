@@ -460,6 +460,30 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
 }
 
 
+/* V63 — restaura a leitura dos cartões de compromissos */
+#dayFixedActivities>.day-fixed-row{
+ display:grid!important;
+ grid-template-columns:132px minmax(180px,1fr) auto!important;
+ align-items:center!important;
+ gap:14px!important;
+ min-height:66px;
+}
+#dayFixedActivities .day-fixed-time{display:block!important;color:#365B7D!important}
+#dayFixedActivities .day-fixed-main{display:grid!important;min-width:0!important;gap:4px}
+#dayFixedActivities .day-fixed-main strong{display:block!important;color:#243247!important;font-size:13px!important}
+#dayFixedActivities .day-fixed-main .meta{display:block!important;color:#718096!important;font-size:11px!important}
+#dayFixedActivities .day-fixed-controls{display:flex!important;align-items:center!important;justify-content:flex-end!important;flex-wrap:wrap!important;gap:8px!important}
+#dayFixedActivities .day-fixed-real,#dayFixedActivities .day-fixed-check{display:flex!important;align-items:center!important;gap:5px!important;white-space:nowrap}
+#dayFixedActivities .day-fixed-controls button{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-width:0!important}
+@media(max-width:900px){
+ #dayFixedActivities>.day-fixed-row{grid-template-columns:110px minmax(0,1fr)!important;gap:8px 12px!important}
+ #dayFixedActivities .day-fixed-controls{grid-column:2!important;justify-content:flex-start!important}
+}
+@media(max-width:600px){
+ #dayFixedActivities>.day-fixed-row{grid-template-columns:1fr!important;gap:8px!important}
+ #dayFixedActivities .day-fixed-controls{grid-column:1!important;justify-content:flex-start!important}
+}
+
 /* V62 — Biblioteca única de checklists organizada por tags */
 #myWeek,#weekly{display:none!important}
 .checklist-toolbar{display:flex;gap:10px;align-items:center;margin:14px 0 18px;max-width:680px}

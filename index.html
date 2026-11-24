@@ -459,6 +459,31 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
  .day-fixed-real input{width:62px!important}
 }
 
+
+/* V62 — Biblioteca única de checklists organizada por tags */
+#myWeek,#weekly{display:none!important}
+.checklist-toolbar{display:flex;gap:10px;align-items:center;margin:14px 0 18px;max-width:680px}
+.checklist-toolbar input{flex:1;min-width:180px}
+.checklist-toolbar select{width:auto;min-width:180px}
+.checklist-library{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;align-items:stretch}
+.checklist-template-card{background:#FFFFFF;border:1px solid #DCE5ED;border-radius:13px;padding:16px;box-shadow:0 2px 9px rgba(23,43,77,.04);min-width:0;display:flex;flex-direction:column}
+.checklist-template-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.checklist-template-icon{width:34px;height:34px;border-radius:9px;background:#EAF0F6;color:#365B7D;display:grid;place-items:center;font-size:17px}
+.checklist-template-actions{display:flex;gap:4px}
+.checklist-template-card h3{font-size:15px;line-height:1.35;color:#172B4D;margin:0 0 9px;overflow-wrap:anywhere}
+.checklist-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.checklist-tag{display:inline-flex;padding:4px 8px;border-radius:20px;background:#EAF0F6;color:#365B7D;font-size:10px;font-weight:600}
+.checklist-tag.muted-tag{background:#F1F4F7;color:#8995A4}
+.checklist-template-meta{font-size:11px;color:#718096;font-weight:600;margin-bottom:7px}
+.checklist-template-preview{list-style:none;padding:0;margin:0;display:grid;gap:7px}
+.checklist-template-preview li{display:flex;gap:8px;align-items:flex-start;color:#475569;font-size:11px;line-height:1.4;min-width:0}
+.checklist-template-preview li span:last-child{overflow-wrap:anywhere}
+.checklist-item-number{width:17px;height:17px;flex:0 0 17px;border-radius:5px;background:#F1F5F9;color:#64748B;display:grid;place-items:center;font-size:9px;font-weight:700}
+.checklist-more{font-size:10px;color:#365B7D;font-weight:600;margin:8px 0 0 25px}
+.checklist-editor-row{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#FFFFFF}
+.checklist-editor-check{color:#7890A8;font-size:17px;flex:0 0 auto}
+@media(max-width:650px){.checklist-toolbar{flex-direction:column;align-items:stretch}.checklist-toolbar input,.checklist-toolbar select{width:100%;max-width:none}.checklist-library{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -467,12 +492,10 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
   <div class="brand"><h1>LIFE DASHBOARD</h1><small>PERSONAL MANAGEMENT SYSTEM</small></div>
   <nav class="nav" id="nav">
     <button class="active" data-page="day"><span class="ico">◷</span><span>Meu dia</span></button>
-    <button data-page="myWeek"><span class="ico">▦</span><span>Minha semana</span></button>
     <button data-page="exercises"><span class="ico">♡</span><span>Exercícios</span></button>
     <button data-page="checklists"><span class="ico">☑</span><span>Checklists</span></button>
     <button data-page="plan"><span class="ico">◎</span><span>Plano de Ação</span></button>
     <button data-page="vision"><span class="ico">◇</span><span>Virtudes</span></button>
-    <button data-page="weekly"><span class="ico">▦</span><span>Revisão Semanal</span></button>
   </nav>
   <div class="side-bottom">Sua vida, com intenção.<br>Versão 1.0 · Protótipo local</div>
 </aside>
@@ -561,9 +584,9 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
 </section>
 
 <section class="page" id="checklists">
-    <p class="intro">Crie listas reutilizáveis e abra-as diretamente pelas atividades da sua agenda.</p>
-    <div class="section-head"><h2>Checklists por pilar</h2><button class="btn primary" id="addChecklist">＋ Novo checklist</button></div>
-    <div id="checklistPillars" class="pillar-tabs"></div>
+    <p class="intro">Organize modelos reutilizáveis por tags e associe-os às suas atividades quando necessário.</p>
+    <div class="section-head"><h2>Biblioteca de checklists</h2><button class="btn primary" id="addChecklist">＋ Novo checklist</button></div>
+    <div class="checklist-toolbar"><input id="checklistSearch" type="search" placeholder="Buscar checklist..." aria-label="Buscar checklist"><select id="checklistTagFilter" aria-label="Filtrar por tag"><option value="">Todas as tags</option></select></div>
     <div id="checklistList" class="list"></div>
   </section>
 
@@ -955,39 +978,53 @@ function renderMyWeek(){
 }
 document.getElementById("myWeekPicker").addEventListener("change",()=>{myWeekValue=document.getElementById("myWeekPicker").value;renderMyWeek()});
 function renderChecklist(){
-let host=document.getElementById("checklistPillars");
-host.innerHTML=pillars.map((p,i)=>`<button class="chip ${i===0?"active":""}" data-check-pillar="${i}">${p}</button>`).join("");
-let pi=0;
-function draw(){
- let list=data.checklists.filter(c=>c.pillar===pi);
- document.getElementById("checklistList").innerHTML=list.length?list.map(c=>`<div class="row-item"><div><strong>${esc(c.name)}</strong><div class="sub">${c.items.length} itens · ${c.items.map(x=>esc(x.text)).join(" · ")}</div></div><button class="btn" onclick="editChecklist('${c.id}')">Editar</button></div>`).join(""):'<div class="board-note">Nenhum checklist cadastrado neste pilar. Crie um novo checklist para começar.</div>';
+ const host=document.getElementById("checklistList");
+ const search=document.getElementById("checklistSearch");
+ const tagFilter=document.getElementById("checklistTagFilter");
+ if(!host||!search||!tagFilter)return;
+ data.checklists=(data.checklists||[]).map(c=>({...c,tags:Array.isArray(c.tags)?c.tags:(Number.isInteger(Number(c.pillar))&&pillars[Number(c.pillar)]?[pillars[Number(c.pillar)]]:[])}));
+ const allTags=[...new Set(data.checklists.flatMap(c=>c.tags||[]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+ const selected=tagFilter.value;
+ tagFilter.innerHTML='<option value="">Todas as tags</option>'+allTags.map(t=>'<option value="'+esc(t)+'">'+esc(t)+'</option>').join("");
+ tagFilter.value=allTags.includes(selected)?selected:"";
+ function draw(){
+  const q=search.value.trim().toLocaleLowerCase("pt-BR"),tag=tagFilter.value;
+  const list=data.checklists.filter(c=>(!tag||(c.tags||[]).includes(tag))&&(!q||(c.name+" "+(c.tags||[]).join(" ")+" "+(c.items||[]).map(x=>x.text??x).join(" ")).toLocaleLowerCase("pt-BR").includes(q)));
+  host.className="checklist-library";
+  host.innerHTML=list.length?list.map(c=>{
+   const items=(c.items||[]).map(x=>String(x.text??x));
+   const tags=(c.tags||[]).map(t=>'<span class="checklist-tag">'+esc(t)+'</span>').join("");
+   const preview=items.slice(0,4).map((item,i)=>'<li><span class="checklist-item-number">'+(i+1)+'</span><span>'+esc(item)+'</span></li>').join("");
+   return '<article class="checklist-template-card"><div class="checklist-template-top"><div class="checklist-template-icon">☑</div><div class="checklist-template-actions"><button type="button" class="icon-btn" title="Editar checklist" onclick="editChecklist(\''+c.id+'\')">✎</button><button type="button" class="icon-btn" title="Excluir checklist" onclick="deleteChecklist(\''+c.id+'\')">×</button></div></div><h3>'+esc(c.name)+'</h3><div class="checklist-tags">'+(tags||'<span class="checklist-tag muted-tag">Sem tags</span>')+'</div><div class="checklist-template-meta">'+items.length+' itens</div><ul class="checklist-template-preview">'+preview+'</ul>'+(items.length>4?'<div class="checklist-more">+'+(items.length-4)+' itens adicionais</div>':"")+'</article>';
+  }).join(""):'<div class="board-note">'+(data.checklists.length?"Nenhum checklist corresponde à busca ou tag selecionada.":"Nenhum checklist cadastrado. Crie seu primeiro modelo para começar.")+'</div>';
+ }
+ search.oninput=draw;tagFilter.onchange=draw;draw();
 }
-host.querySelectorAll("[data-check-pillar]").forEach(b=>b.onclick=()=>{pi=+b.dataset.checkPillar;host.querySelectorAll("[data-check-pillar]").forEach(x=>x.classList.toggle("active",x===b));draw()});
-draw();
-}
+window.deleteChecklist=id=>{
+ const c=data.checklists.find(x=>String(x.id)===String(id));if(!c)return;
+ if(!confirm('Excluir o checklist "'+c.name+'"? Atividades associadas deixarão de encontrá-lo.'))return;
+ data.checklists=data.checklists.filter(x=>String(x.id)!==String(id));save();renderChecklist();
+};
 function checklistForm(existing){
  const initialItems=(existing?.items||[]).map(item=>String(item.text??item));
  const rows=initialItems.length?initialItems:[""];
- openModal(existing?"Editar checklist":"Novo checklist",`<form id="checklistEditor"><div class="form-grid">${field("Nome","name")}${pillarSelect()}<div class="field full"><label>Atividades do checklist</label><div id="checklistEditorItems" style="display:grid;gap:8px"></div><button type="button" class="btn" id="addChecklistItem" style="margin-top:10px">＋ Adicionar atividade</button><p class="small muted" style="margin:8px 0 0">Cada atividade terá seu próprio checkbox quando o checklist for aberto em uma atividade.</p></div></div><div style="text-align:right;margin-top:15px"><button class="btn primary">Salvar checklist</button></div></form>`,f=>{
+ openModal(existing?"Editar checklist":"Novo checklist",`<form id="checklistEditor"><div class="form-grid">${field("Nome","name")}<div class="field full"><label for="checklistTags">Tags</label><input id="checklistTags" name="tags" type="text" placeholder="Ex.: Casa, Rotina, Trabalho"><small class="muted">Separe as tags por vírgula. Você pode usar várias tags no mesmo checklist.</small></div><div class="field full"><label>Itens do checklist</label><div id="checklistEditorItems" style="display:grid;gap:8px"></div><button type="button" class="btn" id="addChecklistItem" style="margin-top:10px">＋ Adicionar item</button><p class="small muted" style="margin:8px 0 0">Cada item terá seu próprio checkbox quando o checklist for aberto em uma atividade.</p></div></div><div style="text-align:right;margin-top:15px"><button class="btn primary">Salvar checklist</button></div></form>`,f=>{
   const items=[...document.querySelectorAll("#checklistEditorItems [data-checklist-text]")].map(input=>input.value.trim()).filter(Boolean).map(text=>({text,notes:""}));
-  if(!items.length){alert("Adicione pelo menos uma atividade ao checklist.");return}
-  const saved={id:existing?.id||crypto.randomUUID(),name:f.get("name"),pillar:+f.get("pillar"),items};
+  if(!items.length){alert("Adicione pelo menos um item ao checklist.");return}
+  const tags=[...new Set(String(f.get("tags")||"").split(",").map(t=>t.trim()).filter(Boolean))];
+  const saved={id:existing?.id||crypto.randomUUID(),name:f.get("name"),tags,items};
   if(existing)data.checklists=data.checklists.map(x=>x.id===existing.id?saved:x);else data.checklists.push(saved);
-  save();renderChecklist()
+  save();renderChecklist();
  });
  const form=document.querySelector("#modalBody #checklistEditor");
  form.elements.name.value=existing?.name||"";
- form.elements.pillar.value=String(existing?.pillar??0);
+ form.elements.tags.value=(existing?.tags||(Number.isInteger(Number(existing?.pillar))&&pillars[Number(existing.pillar)]?[pillars[Number(existing.pillar)]]:[])).join(", ");
  const host=document.getElementById("checklistEditorItems");
  function addChecklistEditorRow(value=""){
-  const row=document.createElement("div");
-  row.style.cssText="display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff";
-  const box=document.createElement("input");
-  box.type="checkbox";box.disabled=true;box.setAttribute("aria-label","Item do checklist");box.style.cssText="width:17px;height:17px;accent-color:var(--sage);flex:0 0 auto";
-  const input=document.createElement("input");
-  input.type="text";input.value=value;input.placeholder="Descreva a atividade";input.setAttribute("data-checklist-text","");input.style.cssText="flex:1;min-width:0;border:0;box-shadow:none;padding:5px 2px;background:transparent";
-  const remove=document.createElement("button");
-  remove.type="button";remove.textContent="×";remove.title="Remover atividade";remove.className="icon-btn";remove.onclick=()=>row.remove();
+  const row=document.createElement("div");row.className="checklist-editor-row";
+  const box=document.createElement("span");box.className="checklist-editor-check";box.textContent="☐";
+  const input=document.createElement("input");input.type="text";input.value=value;input.placeholder="Descreva o item";input.setAttribute("data-checklist-text","");input.style.cssText="flex:1;min-width:0;border:0;box-shadow:none;padding:5px 2px;background:transparent";
+  const remove=document.createElement("button");remove.type="button";remove.textContent="×";remove.title="Remover item";remove.className="icon-btn";remove.onclick=()=>row.remove();
   row.append(box,input,remove);host.append(row);
  }
  rows.forEach(value=>addChecklistEditorRow(value));

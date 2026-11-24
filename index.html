@@ -1449,7 +1449,37 @@ function weekHours(type){return data.activities.reduce((s,a)=>s+(type==="planned
 function renderStats(){document.querySelectorAll("[data-save]").forEach(el=>{if(document.activeElement!==el)el.value=data.notes[el.dataset.save]||""})}
 document.querySelectorAll("[data-save]").forEach(el=>el.addEventListener("change",()=>{data.notes[el.dataset.save]=el.value;save()}));
 document.getElementById("backupBtn").onclick=()=>{let blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="Life-Dashboard-Backup-"+dateISO()+".json";a.click();URL.revokeObjectURL(url)};
-document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();document.getElementById("importFile").onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let imported=JSON.parse(r.result);if(confirm("Importar backup? Os dados atuais deste navegador serão substituídos.")){data={...blank(),...imported};save();renderAll();alert("Backup importado.")}}catch(err){alert("Arquivo JSON inválido.")}};r.readAsText(f)};
+const importButton=document.getElementById("importBtn"),importInput=document.getElementById("importFile");
+importButton.addEventListener("click",()=>{importInput.value="";importInput.click()});
+importInput.addEventListener("change",e=>{
+ const file=e.target.files&&e.target.files[0];if(!file)return;
+ const reader=new FileReader();
+ reader.onerror=()=>{alert("Não foi possível ler o arquivo selecionado. Tente novamente.");importInput.value=""};
+ reader.onload=()=>{
+  try{
+   const imported=JSON.parse(String(reader.result||""));
+   if(!imported||typeof imported!=="object"||Array.isArray(imported))throw new Error("Formato inválido");
+   const knownKeys=["activities","recurringTasks","checklists","projects","objectives","exerciseActivities","standaloneActions","dayBrainDump","weeklyReviews"];
+   if(!knownKeys.some(key=>Object.prototype.hasOwnProperty.call(imported,key)))throw new Error("Este arquivo não parece ser um backup do Life Dashboard");
+   if(!confirm("Importar backup? Os dados atuais deste navegador serão substituídos."))return;
+   const restored={...blank(),...imported};
+   if(!Array.isArray(restored.projects))restored.projects=[];
+   if(!restored.projects.length&&Array.isArray(restored.objectives)){
+    restored.projects=restored.objectives.flatMap(o=>(o.projects||[]).map(pr=>({...pr,pillar:o.pillar??0,legacyObjective:o.name||""})));
+   }
+   if(!Array.isArray(restored.standaloneActions))restored.standaloneActions=[];
+   data=restored;
+   save();
+   renderAll();
+   alert("Backup importado com sucesso.");
+  }catch(err){
+   alert(err.message==="Formato inválido"||err.message.startsWith("Este arquivo")?err.message:"Não foi possível importar. Verifique se o arquivo JSON está íntegro.");
+  }finally{
+   importInput.value="";
+  }
+ };
+ reader.readAsText(file);
+});
 
 /* V42 — painel de recorrências */
 function recurringFrequencyLabel(t){return t.frequency==="daily"?"Diária":t.frequency==="monthly"?"Mensal":t.frequency==="weekly"?"Semanal":"Não definida"}

@@ -344,6 +344,34 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
  .project-day-column:last-child{grid-column:auto}
 }
 
+
+/* V58 — Brain Dump em primeiro plano, sincronização discreta e títulos Kanban sem corte */
+.topbar{position:relative;z-index:16}
+.cloud-toggle{display:inline-flex;align-items:center;gap:7px;background:#FFFFFF;color:#526176;border-color:#E1E8F0;padding:7px 10px;font-size:11px}
+.cloud-toggle:hover{background:#F3F6FA;color:#172B4D}
+.cloud-toggle-dot{width:7px;height:7px;border-radius:50%;background:#94A3B8;display:inline-block;flex:0 0 7px}
+.cloud-panel{position:absolute;right:0;top:calc(100% + 7px);width:min(520px,calc(100vw - 32px));z-index:40;padding:15px;margin:0!important;box-shadow:0 14px 40px rgba(23,43,77,.16);border-color:#DCE5ED}
+.cloud-panel[hidden]{display:none!important}
+.cloud-panel:not([hidden]){display:block}
+.cloud-panel .section-head{align-items:flex-start}
+.cloud-panel .section-head h2{font-size:15px!important}
+#dayBrainDumpCard{margin:0 0 20px!important}
+#dayBrainDumpCard textarea{background:#FFFFFF}
+.project-kanban,.project-day-column,.project-day-column .day-kanban-head,.project-day-column .day-kanban-head>div{min-width:0}
+.project-day-column .day-kanban-head{align-items:flex-start;flex-wrap:wrap}
+.project-day-column .day-kanban-title{
+ display:inline-block!important;width:fit-content;max-width:100%;white-space:normal!important;
+ overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere;word-break:normal;
+ line-height:1.4;padding:6px 10px
+}
+.project-day-column .day-kanban-head>div>span{white-space:normal;overflow-wrap:anywhere}
+@media(max-width:650px){
+ .cloud-panel{right:0;left:0;width:100%}
+ .topbar{gap:10px}
+ .topbar>.toolbar{flex-wrap:wrap;justify-content:flex-end}
+ .cloud-toggle{padding:7px 9px}
+}
+
 </style>
 </head>
 <body>
@@ -364,10 +392,10 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
 <main class="main">
   <header class="topbar">
     <div><div class="eyebrow">Seu espaço de organização pessoal</div><h1 class="page-title" id="pageTitle">Meu dia</h1></div>
-    <div class="toolbar"><span class="date-pill" id="todayLabel"></span><button class="btn" id="backupBtn">Backup JSON ↓</button><button class="btn" id="importBtn">Importar ↑</button><input id="importFile" type="file" accept="application/json" hidden></div>
+    <div class="toolbar"><span class="date-pill" id="todayLabel"></span><button class="btn cloud-toggle" id="cloudToggle" type="button" aria-expanded="false" aria-controls="cloudPanel"><span class="cloud-toggle-dot" id="cloudQuickDot"></span><span id="cloudQuickStatus">Sincronização</span></button><button class="btn" id="backupBtn">Backup JSON ↓</button><button class="btn" id="importBtn">Importar ↑</button><input id="importFile" type="file" accept="application/json" hidden></div>
   </header>
 
-  <section class="card" id="cloudPanel" style="padding:16px;margin:0 0 22px">
+  <section class="card cloud-panel" id="cloudPanel" hidden>
     <div class="section-head" style="margin:0 0 10px"><div><h2 style="font-size:18px;margin:0">Sincronização entre dispositivos</h2><div class="small muted" id="cloudStatus">Desconectado · seus dados continuam salvos neste navegador.</div></div><span class="status-tag" id="cloudBadge">Somente local</span></div>
     <div id="cloudAuthForm" class="form-grid">
       <div class="field"><label for="cloudEmail">E-mail</label><input id="cloudEmail" type="email" autocomplete="username" placeholder="seu@email.com"></div>
@@ -377,6 +405,8 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
     <div id="cloudConnected" style="display:none" class="toolbar"><span class="small" id="cloudAccount"></span><button class="btn" id="cloudSyncNow">Sincronizar agora</button><button class="btn" id="cloudLogout">Sair</button></div>
   </section>
 
+
+
   <section class="page active" id="day">
     <p class="intro">Planeje seu tempo com intenção e acompanhe o que realmente aconteceu.</p>
     <div class="day-tabs" role="tablist" aria-label="Meu Dia">
@@ -385,6 +415,14 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
       <button type="button" class="day-tab" data-day-tab="history" role="tab" aria-selected="false">✓ Histórico <span id="dayHistoryCount" class="day-tab-count">0</span></button>
     </div>
     <div id="dayAgendaPanel">
+    <section class="card" id="dayBrainDumpCard" style="padding:16px;margin:18px 0">
+      <div class="section-head" style="margin:0 0 10px"><div><h2>Brain Dump</h2><span class="small muted">Capture ideias, lembretes e tarefas ao longo do dia</span></div><span class="small muted" id="dayBrainDumpCount">0 itens</span></div>
+      <div style="display:flex;gap:8px;align-items:flex-start;margin:10px 0">
+        <textarea id="dayBrainDumpInput" rows="2" placeholder="Anote aqui tudo o que surgir durante o dia..." style="flex:1;min-width:0;resize:vertical"></textarea>
+        <button class="btn primary" type="button" id="dayBrainDumpAdd">＋ Adicionar</button>
+      </div>
+      <div id="dayBrainDumpList"></div>
+    </section>
     <div class="grid stats">
       <div class="stat"><span class="label">Horas planejadas</span><strong id="plannedHours">0h</strong><small>Agenda do dia</small></div>
       <div class="stat"><span class="label">Horas realizadas</span><strong id="actualHours">0h</strong><small>Registradas por você</small></div>
@@ -395,14 +433,7 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
     <div id="dayFixedActivities" class="day-fixed-list"></div>
     <div class="section-head"><div><h2>Controle de atividades</h2><span class="small muted">Gerencie o fluxo das atividades dos seus projetos</span></div></div>
     <div id="dayActionKanban" class="project-kanban"></div>
-    <section class="card" id="dayBrainDumpCard" style="padding:16px;margin:18px 0">
-      <div class="section-head" style="margin:0 0 10px"><div><h2>Brain Dump</h2><span class="small muted">Capture ideias, lembretes e tarefas ao longo do dia</span></div><span class="small muted" id="dayBrainDumpCount">0 itens</span></div>
-      <div style="display:flex;gap:8px;align-items:flex-start;margin:10px 0">
-        <textarea id="dayBrainDumpInput" rows="2" placeholder="Anote aqui tudo o que surgir durante o dia..." style="flex:1;min-width:0;resize:vertical"></textarea>
-        <button class="btn primary" type="button" id="dayBrainDumpAdd">＋ Adicionar</button>
-      </div>
-      <div id="dayBrainDumpList"></div>
-    </section>
+
     </div>
     <section id="dayRecurringPanel" style="display:none">
       <div class="section-head"><div><h2>Atividades recorrentes</h2><p class="small muted" style="margin:4px 0 0">Consulte e gerencie todas as recorrências cadastradas.</p></div><span id="recurringCountLabel" class="small muted"></span></div>
@@ -509,7 +540,8 @@ function blank(){return {exerciseActivities:[],activities:[],recurringTasks:[],c
 function load(){try{let d={...blank(),...JSON.parse(localStorage.getItem(stateKey)||"{}")} ; if(!d.projects.length && Array.isArray(d.objectives)){d.projects=d.objectives.flatMap(o=>(o.projects||[]).map(pr=>({...pr,pillar:o.pillar??0,legacyObjective:o.name||""})));} d.standaloneActions=Array.isArray(d.standaloneActions)?d.standaloneActions:[];return d}catch(e){return blank()}}
 function save(){localStorage.setItem(stateKey,JSON.stringify(data));renderStats();scheduleCloudSync()}
 let supabaseClient=null,cloudUser=null,cloudReady=false,cloudBusy=false,cloudTimer=null,cloudDirty=false,cloudRevision=0,cloudLastUpdatedAt=null,cloudPollTimer=null;
-function cloudMessage(message,connected=false){const status=document.getElementById("cloudStatus"),badge=document.getElementById("cloudBadge");if(status)status.textContent=message;if(badge){badge.textContent=connected?"Sincronização ativa":"Somente local";badge.style.background=connected?"#dcebe0":"#f1f3f5";badge.style.color=connected?"#356b49":"#687384"}}
+function cloudMessage(message,connected=false){const status=document.getElementById("cloudStatus"),badge=document.getElementById("cloudBadge"),quick=document.getElementById("cloudQuickStatus"),dot=document.getElementById("cloudQuickDot");if(status)status.textContent=message;if(badge){badge.textContent=connected?"Sincronização ativa":"Somente local";badge.style.background=connected?"#dcebe0":"#f1f3f5";badge.style.color=connected?"#356b49":"#687384"}if(quick)quick.textContent=connected?"Sincronizado":"Sincronização";if(dot){dot.style.background=connected?"#3B8A5A":"#94A3B8";dot.title=connected?"Sincronização ativa":"Somente local"}}
+const cloudToggle=document.getElementById("cloudToggle"),cloudPanel=document.getElementById("cloudPanel");if(cloudToggle&&cloudPanel){cloudToggle.addEventListener("click",()=>{const open=cloudPanel.hidden;cloudPanel.hidden=!open;cloudToggle.setAttribute("aria-expanded",String(open))});document.addEventListener("click",e=>{if(!cloudPanel.hidden&&!cloudPanel.contains(e.target)&&!cloudToggle.contains(e.target)){cloudPanel.hidden=true;cloudToggle.setAttribute("aria-expanded","false")}})}
 function mergeCloudData(local,remote){
  const merge=(a,b)=>{
   if(Array.isArray(a)&&Array.isArray(b)){

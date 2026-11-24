@@ -818,6 +818,15 @@ function applyActionLifecycle(action,status){
  if(status==="Concluída"&&!action.completedAt)action.completedAt=now;
  action.status=status;
 }
+function actionStatusStyle(status){
+ const styles={
+  "Próximas ações":"background:#EEF2F6;color:#526174;border-color:#D8E0E8",
+  "Fila Meu Dia":"background:#E8F0FA;color:#365B7D;border-color:#C9D9EA",
+  "Em execução":"background:#FFF3DF;color:#94631D;border-color:#EBD6AF",
+  "Concluída":"background:#E7F3EC;color:#36734F;border-color:#C7E2D1"
+ };
+ return styles[status]||styles["Próximas ações"];
+}
 function formatActionDate(value){
  if(!value)return "—";
  const d=new Date(value);
@@ -1195,7 +1204,7 @@ function renderActionsTable(){
  else host.innerHTML+=`<div class="card" style="padding:0;overflow:hidden"><div style="padding:14px 16px;border-bottom:1px solid var(--line)"><strong>Lista de ações</strong><div class="small muted">Datas de início e conclusão são registradas automaticamente na primeira mudança de status.</div></div><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Ação</th><th>Projeto</th><th>Data planejada</th><th>Status</th><th>Iniciada em</th><th>Concluída em</th><th>Prioridade</th><th></th></tr></thead><tbody>${filtered.map(a=>`<tr>
  <td style="min-width:190px;white-space:normal"><strong>${esc(a.name||"Ação sem título")}</strong><div class="small muted">${esc(a.description||"")}</div></td><td>${esc(a.projectName||"Sem projeto")}</td>
  <td><input aria-label="Data planejada" type="date" value="${a.plannedDate||a.start||""}" onchange="updateActionField('${a.projectId||"independent"}','${a.id}','plannedDate',this.value)" style="min-width:135px"></td>
- <td><select aria-label="Status da ação" onchange="updateActionField('${a.projectId||"independent"}','${a.id}','status',this.value)"><option ${(!a.status||a.status==="Pendente"||a.status==="Próximas ações")?"selected":""}>Próximas ações</option><option ${a.status==="Fila Meu Dia"?"selected":""}>Fila Meu Dia</option><option ${a.status==="Em execução"||a.status==="Em andamento"?"selected":""}>Em execução</option><option ${a.status==="Concluída"?"selected":""}>Concluída</option></select></td>
+ <td><select class="action-status-select" aria-label="Status da ação" style="min-width:145px;padding:7px 28px 7px 10px;border:1px solid;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;${actionStatusStyle(a.status==="Em andamento"?"Em execução":(!a.status||a.status==="Pendente"?"Próximas ações":a.status))}" onchange="updateActionField('${a.projectId||"independent"}','${a.id}','status',this.value)"><option ${(!a.status||a.status==="Pendente"||a.status==="Próximas ações")?"selected":""}>Próximas ações</option><option ${a.status==="Fila Meu Dia"?"selected":""}>Fila Meu Dia</option><option ${a.status==="Em execução"||a.status==="Em andamento"?"selected":""}>Em execução</option><option ${a.status==="Concluída"?"selected":""}>Concluída</option></select></td>
  <td>${formatActionDate(a.startedAt)}</td><td>${formatActionDate(a.completedAt)}</td><td>${esc(a.priority||"Média")}</td>
  <td><button class="icon-btn" title="Editar ação" onclick="editAction('${a.projectId||"independent"}','${a.id}')">✎</button><button class="icon-btn" title="Excluir ação" onclick="deleteAction('${a.projectId||"independent"}','${a.id}')">×</button></td>
  </tr>`).join("")}</tbody></table></div></div>`;

@@ -532,7 +532,7 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
 <main class="main">
   <header class="topbar">
     <div><div class="eyebrow">Seu espaço de organização pessoal</div><h1 class="page-title" id="pageTitle">Meu dia</h1></div>
-    <div class="toolbar"><span class="date-pill" id="todayLabel"></span><button class="btn cloud-toggle" id="cloudToggle" type="button" aria-expanded="false" aria-controls="cloudPanel"><span class="cloud-toggle-dot" id="cloudQuickDot"></span><span id="cloudQuickStatus">Sincronização</span></button><button class="btn" id="backupBtn">Backup JSON ↓</button><button class="btn" id="importBtn">Importar ↑</button><input id="importFile" type="file" accept="application/json" hidden></div>
+    <div class="toolbar"><span class="date-pill" id="todayLabel"></span><button class="btn cloud-toggle" id="cloudToggle" type="button" aria-expanded="false" aria-controls="cloudPanel"><span class="cloud-toggle-dot" id="cloudQuickDot"></span><span id="cloudQuickStatus">Sincronização</span></button><button class="btn" id="backupBtn">Backup JSON ↓</button><label class="btn" id="importBtn" for="importFile" style="cursor:pointer">Importar ↑</label><input id="importFile" type="file" accept=".json,application/json" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0"></div>
   </header>
 
   <section class="card cloud-panel" id="cloudPanel" hidden>
@@ -1450,7 +1450,7 @@ function renderStats(){document.querySelectorAll("[data-save]").forEach(el=>{if(
 document.querySelectorAll("[data-save]").forEach(el=>el.addEventListener("change",()=>{data.notes[el.dataset.save]=el.value;save()}));
 document.getElementById("backupBtn").onclick=()=>{let blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="Life-Dashboard-Backup-"+dateISO()+".json";a.click();URL.revokeObjectURL(url)};
 const importButton=document.getElementById("importBtn"),importInput=document.getElementById("importFile");
-importButton.addEventListener("click",()=>{importInput.value="";importInput.click()});
+importInput.addEventListener("click",()=>{importInput.value=""});
 importInput.addEventListener("change",e=>{
  const file=e.target.files&&e.target.files[0];if(!file)return;
  const reader=new FileReader();

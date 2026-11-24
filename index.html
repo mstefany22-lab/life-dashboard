@@ -484,6 +484,34 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
 .checklist-editor-check{color:#7890A8;font-size:17px;flex:0 0 auto}
 @media(max-width:650px){.checklist-toolbar{flex-direction:column;align-items:stretch}.checklist-toolbar input,.checklist-toolbar select{width:100%;max-width:none}.checklist-library{grid-template-columns:1fr}}
 
+
+/* V63 — Projetos por pilar e ações em página independente */
+.projects-workspace{display:grid;grid-template-columns:245px minmax(0,1fr);gap:20px;align-items:start;margin-top:18px}
+.projects-pillar-sidebar{display:grid;gap:5px;padding:8px;background:#FFFFFF;border:1px solid #DCE5ED;border-radius:12px;position:sticky;top:15px}
+.projects-pillar-tab{width:100%;display:flex;align-items:center;justify-content:space-between;gap:9px;padding:10px 11px;border:1px solid transparent;background:transparent;border-radius:8px;color:#526176;text-align:left;font:500 12px Inter,ui-sans-serif,system-ui,sans-serif;cursor:pointer}
+.projects-pillar-tab>span{display:flex;align-items:center;gap:9px;min-width:0}
+.projects-pillar-tab i{width:25px;height:25px;flex:0 0 25px;display:grid;place-items:center;border-radius:7px;background:color-mix(in srgb,var(--pillar-color) 22%,white);color:#365B7D;font-style:normal}
+.projects-pillar-tab b{font-size:10px;color:#7B8999;background:#F1F4F7;border-radius:20px;padding:3px 7px}
+.projects-pillar-tab:hover{background:#F5F7FA}
+.projects-pillar-tab.active{background:#EAF0F6;border-color:#DCE5ED;color:#172B4D;font-weight:700}
+.projects-pillar-tab.active b{background:#FFFFFF;color:#365B7D}
+.projects-content{min-width:0}
+.projects-results-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:2px 0 12px;color:#718096;font-size:11px;font-weight:600}
+.projects-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:13px;align-items:stretch}
+.project-overview-card{background:#FFFFFF;border:1px solid #DCE5ED;border-radius:12px;padding:16px;min-width:0;box-shadow:0 2px 9px rgba(23,43,77,.035);display:flex;flex-direction:column;gap:10px}
+.project-overview-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.project-pillar-mark{width:32px;height:32px;border-radius:9px;background:color-mix(in srgb,var(--pillar-color) 25%,white);display:grid;place-items:center;color:#365B7D;font-size:16px}
+.project-status{font-size:10px;color:#64748B;background:#F1F4F7;border-radius:20px;padding:4px 8px}
+.project-overview-card h3{font-size:15px;color:#172B4D;line-height:1.35;margin:0;overflow-wrap:anywhere}
+.project-overview-card>p{font-size:11px;color:#718096;line-height:1.5;margin:0;min-height:32px}
+.project-overview-meta{display:flex;justify-content:space-between;gap:8px;color:#64748B;font-size:10px}
+.project-progress-track{height:6px;background:#EDF1F5;border-radius:20px;overflow:hidden}
+.project-progress-track span{display:block;height:100%;background:#365B7D;border-radius:20px}
+.project-overview-footer{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#718096;font-size:10px}
+.project-overview-footer>div{display:flex;gap:2px}
+@media(max-width:760px){.projects-workspace{grid-template-columns:1fr;gap:12px}.projects-pillar-sidebar{position:static;display:flex;overflow-x:auto;gap:5px;padding:6px}.projects-pillar-tab{flex:0 0 auto;width:auto;white-space:nowrap}.projects-pillar-tab>span{white-space:nowrap}.projects-pillar-tab b{display:none}.projects-card-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}}
+@media(max-width:520px){.projects-card-grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -494,7 +522,8 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
     <button class="active" data-page="day"><span class="ico">◷</span><span>Meu dia</span></button>
     <button data-page="exercises"><span class="ico">♡</span><span>Exercícios</span></button>
     <button data-page="checklists"><span class="ico">☑</span><span>Checklists</span></button>
-    <button data-page="plan"><span class="ico">◎</span><span>Plano de Ação</span></button>
+    <button data-page="projects"><span class="ico">◎</span><span>Projetos</span></button>
+    <button data-page="actions"><span class="ico">☷</span><span>Ações</span></button>
     <button data-page="vision"><span class="ico">◇</span><span>Virtudes</span></button>
   </nav>
   <div class="side-bottom">Sua vida, com intenção.<br>Versão 1.0 · Protótipo local</div>
@@ -590,17 +619,18 @@ input,select,textarea{background:#FFFFFF;border-radius:8px}
     <div id="checklistList" class="list"></div>
   </section>
 
-  <section class="page" id="plan">
-    <p class="intro">Organize seus projetos e defina quais ações serão prioridade em cada semana.</p>
-    <div class="pillar-tabs" id="planTabs"><button class="chip active" data-plan-tab="projects">Projetos</button><button class="chip" data-plan-tab="actions">Ações</button></div>
-    <section id="projectsPanel">
-      <div class="section-head"><h2>Projetos</h2><button class="btn primary" id="addProjectBtn">＋ Novo projeto</button></div>
-      <div id="projectsTable"></div>
-    </section>
-    <section id="actionsPanel" style="display:none">
-      <div class="section-head"><div><h2>Ações</h2><p class="small muted" style="margin:4px 0 0">Organize ações vinculadas a projetos ou independentes.</p></div><button class="btn primary" id="addStandaloneAction">＋ Nova ação</button></div>
-      <div id="actionsTable"></div>
-    </section>
+  <section class="page" id="projects">
+    <p class="intro">Acompanhe seus projetos por área da vida, com uma visão organizada e independente para cada pilar.</p>
+    <div class="section-head"><div><h2>Projetos</h2><p class="small muted" style="margin:4px 0 0">Selecione um pilar para visualizar seus projetos.</p></div><button class="btn primary" id="addProjectBtn">＋ Novo projeto</button></div>
+    <div class="projects-workspace">
+      <aside class="projects-pillar-sidebar" id="projectsPillarTabs" aria-label="Navegar por pilar"></aside>
+      <div class="projects-content"><div id="projectsTable"></div></div>
+    </div>
+  </section>
+  <section class="page" id="actions">
+    <p class="intro">Gerencie todas as ações dos seus projetos e ações independentes em um único lugar.</p>
+    <div class="section-head"><div><h2>Ações</h2><p class="small muted" style="margin:4px 0 0">Filtre por período, pilar, projeto e status.</p></div><button class="btn primary" id="addStandaloneAction">＋ Nova ação</button></div>
+    <div id="actionsTable"></div>
   </section>
 
   <section class="page" id="vision">
@@ -1042,19 +1072,19 @@ document.querySelectorAll("[data-plan-tab]").forEach(b=>b.addEventListener("clic
 function renderPlan(){renderProjects();renderActionsTable()}
 let projectPillarFilter="all";
 function renderProjects(){
- const ps=data.projects||[],host=document.getElementById("projectsTable");
+ const ps=data.projects||[],host=document.getElementById("projectsTable"),tabs=document.getElementById("projectsPillarTabs");
+ if(!host||!tabs)return;
  const filtered=projectPillarFilter==="all"?ps:ps.filter(p=>Number(p.pillar??0)===Number(projectPillarFilter));
- let html=`<div class="toolbar" style="margin-bottom:12px;align-items:center"><div class="field" style="min-width:220px;margin:0"><label for="projectPillarFilter">Filtrar por pilar</label><select id="projectPillarFilter"><option value="all">Todos os pilares</option>${pillars.map((x,i)=>`<option value="${i}" ${String(projectPillarFilter)===String(i)?"selected":""}>${x}</option>`).join("")}</select></div><span class="small muted">${filtered.length} de ${ps.length} projetos</span></div>`;
- if(!ps.length) html+='<div class="board-note">Nenhum projeto cadastrado. Clique em “Novo projeto” para começar.</div>';
- else if(!filtered.length) html+='<div class="board-note">Nenhum projeto encontrado neste pilar.</div>';
- else html+=`<div style="overflow-x:auto"><table class="data-table"><thead><tr><th></th><th>Projeto</th><th>Pilar</th><th>Prioridade</th><th>Status</th><th>Progresso</th><th></th></tr></thead><tbody>${filtered.map(p=>{
-  const acts=p.actions||[],done=acts.filter(a=>a.status==="Concluída").length,pct=acts.length?Math.round(done/acts.length*100):0;
-  return `<tr><td><button class="icon-btn" title="Expandir projeto" aria-label="Expandir projeto" aria-expanded="false" id="expand-${p.id}" onclick="toggleProjectActions('${p.id}')">⌄</button></td><td><strong>${esc(p.name)}</strong></td><td>${pillars[Number(p.pillar)||0]||"—"}</td><td>${esc(p.priority||"—")}</td><td>${esc(p.status||"Não iniciado")}</td><td><div class="progress" style="min-width:75px"><span style="width:${pct}%"></span></div><span class="small muted">${pct}% · ${acts.length} ações / ${done} realizadas</span></td><td><button class="icon-btn" title="Editar projeto" onclick="editProject('${p.id}')">✎</button><button class="icon-btn" title="Excluir projeto" onclick="deleteProject('${p.id}')">×</button></td></tr>
-  <tr id="actions-row-${p.id}" style="display:none"><td colspan="7"><div class="project-details">${acts.length?`<div class="action-table-wrap"><table class="data-table action-table"><thead><tr><th>Ação</th><th>Data</th><th>Horário</th><th>Horas planejadas</th><th>Status</th><th></th></tr></thead><tbody>${acts.map(a=>`<tr><td>${esc(a.name)}</td><td>${a.plannedDate?fmtDate(a.plannedDate):"—"}</td><td>${a.startTime||a.start||"—"}${a.endTime||a.end?"–"+(a.endTime||a.end):""}</td><td>${Number(a.plannedHours??a.estimate??0).toLocaleString("pt-BR")}h</td><td><select aria-label="Status da ação" onchange="updateActionField('${p.id}','${a.id}','status',this.value)"><option ${(!a.status||a.status==="Pendente"||a.status==="Próximas ações")?"selected":""}>Próximas ações</option><option ${a.status==="Fila Meu Dia"?"selected":""}>Fila Meu Dia</option><option ${a.status==="Em execução"||a.status==="Em andamento"?"selected":""}>Em execução</option><option ${a.status==="Concluída"?"selected":""}>Concluída</option></select></td><td><button class="icon-btn" title="Editar ação" onclick="editAction('${p.id}','${a.id}')">✎</button><button class="icon-btn" title="Excluir ação" onclick="deleteAction('${p.id}','${a.id}')">×</button></td></tr>`).join("")}</tbody></table></div>`:'<p class="small muted">Ainda não há ações neste projeto.</p>'}<div class="toolbar" style="margin-top:10px"><button class="btn" onclick="addAction('${p.id}')">＋ Nova ação</button></div></div></td></tr>`;
- }).join("")}</tbody></table></div>`;
- host.innerHTML=html;
- const filter=document.getElementById("projectPillarFilter");
- filter.onchange=e=>{projectPillarFilter=e.target.value;renderProjects()};
+ const counts=pillars.map((_,i)=>ps.filter(p=>Number(p.pillar??0)===i).length);
+ tabs.innerHTML='<button type="button" class="projects-pillar-tab '+(projectPillarFilter==="all"?"active":"")+'" data-project-pillar="all"><span>Todos os projetos</span><b>'+ps.length+'</b></button>'+
+ pillars.map((p,i)=>'<button type="button" class="projects-pillar-tab '+(String(projectPillarFilter)===String(i)?"active":"")+'" data-project-pillar="'+i+'"><span><i style="--pillar-color:'+colors[i]+'">'+icons[i]+'</i>'+esc(p)+'</span><b>'+counts[i]+'</b></button>').join("");
+ tabs.querySelectorAll("[data-project-pillar]").forEach(btn=>btn.onclick=()=>{projectPillarFilter=btn.dataset.projectPillar;renderProjects()});
+ if(!ps.length){host.innerHTML='<div class="board-note">Nenhum projeto cadastrado. Clique em “Novo projeto” para começar.</div>';return}
+ if(!filtered.length){host.innerHTML='<div class="board-note">Nenhum projeto cadastrado neste pilar. Você pode criar um projeto usando o botão acima.</div>';return}
+ host.innerHTML='<div class="projects-results-head"><span>'+filtered.length+' '+(filtered.length===1?"projeto":"projetos")+'</span><span>'+ (projectPillarFilter==="all"?"Todos os pilares":esc(pillars[Number(projectPillarFilter)]))+'</span></div><div class="projects-card-grid">'+filtered.map(p=>{
+  const acts=p.actions||[],done=acts.filter(a=>a.status==="Concluída").length,pct=acts.length?Math.round(done/acts.length*100):0,pi=Number(p.pillar)||0;
+  return '<article class="project-overview-card"><div class="project-overview-top"><span class="project-pillar-mark" style="--pillar-color:'+colors[pi]+'">'+icons[pi]+'</span><span class="project-status">'+esc(p.status||"Não iniciado")+'</span></div><h3>'+esc(p.name)+'</h3><p>'+esc(p.description||"Sem descrição cadastrada.")+'</p><div class="project-overview-meta"><span>'+esc(p.priority||"Prioridade não definida")+'</span><span>'+acts.length+' ações</span></div><div class="project-progress-track"><span style="width:'+pct+'%"></span></div><div class="project-overview-footer"><span>'+pct+'% concluído · '+done+'/'+acts.length+' ações</span><div><button type="button" class="icon-btn" title="Editar projeto" onclick="editProject(\''+p.id+'\')">✎</button><button type="button" class="icon-btn" title="Excluir projeto" onclick="deleteProject(\''+p.id+'\')">×</button></div></div></article>';
+ }).join("")+'</div>';
 }
 window.toggleProjectActions=id=>{const row=document.getElementById("actions-row-"+id),btn=document.getElementById("expand-"+id);if(!row||!btn)return;const opening=row.style.display==="none";row.style.display=opening?"table-row":"none";btn.setAttribute("aria-expanded",String(opening));btn.textContent=opening?"⌃":"⌄";btn.title=opening?"Recolher ações":"Expandir ações"};
 function fmtDate(v){if(!v)return "—";let d=new Date(v+"T00:00:00");return d.toLocaleDateString("pt-BR")}
